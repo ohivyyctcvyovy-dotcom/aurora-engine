@@ -194,7 +194,7 @@ $('fpsExample').onclick=()=>{$('fpsDescription').value='FPS 3D dentro de um pré
 $('fpsBtn').onclick=openFPSGenerator;
 function makeMat(color,roughness=.8){return new THREE.MeshStandardMaterial({color,roughness})}
 function addFPSBox(group,x,y,z,w,h,d,color){const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),makeMat(color));m.position.set(x,y,z);m.castShadow=true;m.receiveShadow=true;group.add(m);return m}
-function generateFPSProject(){
+function generateFPSScene(){
  if(!threeReady||!THREE){$('fpsGenStatus').textContent='A cena 3D ainda está carregando. Verifique a conexão e tente novamente.';return}
  const floors=Math.max(2,Math.min(5,Number($('fpsFloors').value)||3)),style=$('fpsStyle').value;
  if(fpsState.group)threeScene.remove(fpsState.group);
@@ -228,8 +228,32 @@ function generateFPSProject(){
  $('foot').textContent='Protótipo FPS gerado · '+floors+' andares · objetivos interativos';
  if(window.matchMedia('(pointer:fine)').matches)$('three3d').requestPointerLock?.();
 }
-$('fpsGenerate').onclick=generateFPSProject;
-function stopFPS(){fpsState.active=false;$('fpsGameHud').classList.remove('active');if(document.pointerLockElement)document.exitPointerLock();$('runBtn').textContent='▶ Executar';if(fpsState.group){threeScene.remove(fpsState.group);fpsState.group=null}updateThreeCamera()}
+const raceState={car:null,checkpoints:[],index:0,laps:0,speed:0,heading:0,keys:{},group:null};
+function generateRacingProject(){
+ if(!threeReady||!THREE){$('fpsGenStatus').textContent='A cena 3D ainda está carregando. Tente novamente.';return}
+ if(fpsState.group)threeScene.remove(fpsState.group);
+ const g=new THREE.Group(),road=new THREE.Mesh(new THREE.TorusGeometry(38,7,12,120),makeMat(0x343942));
+ road.rotation.x=Math.PI/2;road.position.y=-.15;g.add(road);
+ const grass=new THREE.Mesh(new THREE.CircleGeometry(70,96),makeMat(0x253a2b));grass.rotation.x=-Math.PI/2;grass.position.y=-.55;g.add(grass);
+ const center=new THREE.Mesh(new THREE.CircleGeometry(24,64),makeMat(0x253a2b));center.rotation.x=-Math.PI/2;center.position.y=-.5;g.add(center);
+ for(let i=0;i<32;i++){const a=i/32*Math.PI*2;const b=addFPSBox(g,Math.cos(a)*38,.5,Math.sin(a)*38,2.2,1,1.2,i%2?0xe5e5e5:0xc84d43);b.rotation.y=-a}
+ raceState.checkpoints=[];for(let i=0;i<4;i++){const a=i/4*Math.PI*2,cp={x:Math.cos(a)*38,z:Math.sin(a)*38};raceState.checkpoints.push(cp);const gate=new THREE.Mesh(new THREE.TorusGeometry(3,.25,8,24),makeMat(0xd7ad58));gate.position.set(cp.x,3,cp.z);g.add(gate)}
+ const car=new THREE.Group(),body=new THREE.Mesh(new THREE.BoxGeometry(2.2,.7,4),makeMat(0x2c75c7,.35));body.position.y=.8;car.add(body);
+ const cabin=new THREE.Mesh(new THREE.BoxGeometry(1.45,.75,1.8),makeMat(0x9fc6dc,.25));cabin.position.set(0,1.45,-.25);car.add(cabin);
+ for(const x of [-1.15,1.15])for(const z of [-1.25,1.25]){const wheel=new THREE.Mesh(new THREE.CylinderGeometry(.42,.42,.28,16),makeMat(0x151515));wheel.rotation.z=Math.PI/2;wheel.position.set(x,.45,z);car.add(wheel)}
+ g.add(car);raceState.car=car;raceState.group=g;raceState.index=0;raceState.laps=0;raceState.speed=0;raceState.heading=0;raceState.keys={};threeScene.add(g);fpsState.group=g;fpsState.name=$('fpsName').value.trim()||'Corrida Aurora';fpsState.active=true;
+ threeCamera.position.set(0,7,12);threeCamera.lookAt(0,0,0);threeCamera.fov=65;threeCamera.updateProjectionMatrix();
+ $('fpsGameName').textContent=fpsState.name;$('fpsFloorLabel').textContent='Volta 0/3';$('fpsTeamLabel').textContent='Velocidade 0 km/h';$('fpsObjective').textContent='Passe pelos portais dourados na ordem indicada e complete 3 voltas.';
+ $('fpsControls').innerHTML='<button id="fpsLeft">◀</button><button id="fpsUp">ACELERAR</button><button id="fpsDown">FREAR</button><button id="fpsRight">▶</button>';
+ $('fpsUp').onpointerdown=()=>raceState.keys.w=true;$('fpsUp').onpointerup=$('fpsUp').onpointerleave=()=>raceState.keys.w=false;
+ $('fpsDown').onpointerdown=()=>raceState.keys.s=true;$('fpsDown').onpointerup=$('fpsDown').onpointerleave=()=>raceState.keys.s=false;
+ $('fpsLeft').onpointerdown=()=>raceState.keys.a=true;$('fpsLeft').onpointerup=$('fpsLeft').onpointerleave=()=>raceState.keys.a=false;
+ $('fpsRight').onpointerdown=()=>raceState.keys.d=true;$('fpsRight').onpointerup=$('fpsRight').onpointerleave=()=>raceState.keys.d=false;
+ $('fpsGameHud').classList.add('active');$('fpsGenerator').classList.remove('open');$('runBtn').textContent='■ Sair da corrida';$('foot').textContent='Corrida 3D gerada · circuito, veículo e checkpoints';
+}
+function generateFromDescription(){const d=$('fpsDescription').value.trim();if(!d){$('fpsGenStatus').textContent='Escreva uma descrição para gerar o jogo.';return}const genre=$('gameGenre').value;const race=genre==='racing'||(genre==='auto'&&/(corrida|carro|racing|autom[oó]vel|kart)/i.test(d));if(race)generateRacingProject();else generateFPSScene()}
+$('fpsGenerate').onclick=generateFromDescription;
+function stopFPS(){fpsState.active=false;raceState.group=null;$('fpsGameHud').classList.remove('active');if(document.pointerLockElement)document.exitPointerLock();$('runBtn').textContent='▶ Executar';if(fpsState.group){threeScene.remove(fpsState.group);fpsState.group=null}updateThreeCamera()}
 $('fpsExit').onclick=stopFPS;
 function fpsShoot(){if(!fpsState.active||!fpsState.bots.length)return;const ray=new THREE.Raycaster();ray.setFromCamera(new THREE.Vector2(0,0),threeCamera);const hits=ray.intersectObjects(fpsState.bots,false);if(hits.length){const bot=hits[0].object;bot.visible=false;fpsState.bots=fpsState.bots.filter(b=>b!==bot);$('fpsObjective').textContent='Alvo de treinamento atingido!';if(!fpsState.bots.length)$('fpsObjective').textContent='Todos os alvos de treinamento foram neutralizados.'}else $('fpsObjective').textContent='Disparo efetuado · mire nos personagens de treino.'}
 $('fpsShoot').onclick=fpsShoot;
@@ -238,14 +262,16 @@ function fpsNextFloor(){if(!fpsState.active)return;const stair=Math.hypot(fpsSta
 $('fpsFloor').onclick=fpsNextFloor;
 function fpsInteract(){if(!fpsState.active)return;let best=null,dist=999;for(const o of fpsState.objectives){if(o.done)continue;const d=Math.hypot(fpsState.x-o.x,fpsState.z-o.z);if(d<dist){best=o;dist=d}}if(best&&dist<4){best.done=true;fpsState.scoreA++;$('fpsTeamLabel').textContent='Azul '+fpsState.scoreA+' × '+fpsState.scoreB+' Vermelho';$('fpsObjective').textContent='Objetivo concluído! Procure o próximo marcador.';if(fpsState.objectives.every(o=>o.done))$('fpsObjective').textContent='Vitória da equipe azul! Todos os objetivos foram concluídos.'}else $('fpsObjective').textContent='Aproxime-se de um marcador dourado para interagir.'}
 $('fpsInteract').onclick=fpsInteract;
-document.addEventListener('keydown',e=>{if(!fpsState.active)return;fpsState.keys[e.key.toLowerCase()]=true;if(e.key.toLowerCase()==='e')fpsInteract();if(e.key.toLowerCase()==='f')fpsNextFloor();if(e.key===' '){e.preventDefault();fpsShoot()}});
-document.addEventListener('keyup',e=>{fpsState.keys[e.key.toLowerCase()]=false});
+document.addEventListener('keydown',e=>{if(!fpsState.active)return;if(raceState.group){raceState.keys[e.key.toLowerCase()]=true;return}fpsState.keys[e.key.toLowerCase()]=true;if(e.key.toLowerCase()==='e')fpsInteract();if(e.key.toLowerCase()==='f')fpsNextFloor();if(e.key===' '){e.preventDefault();fpsShoot()}});
+document.addEventListener('keyup',e=>{fpsState.keys[e.key.toLowerCase()]=false;raceState.keys[e.key.toLowerCase()]=false});
 $('fpsUp').onpointerdown=()=>fpsState.keys.w=true;$('fpsUp').onpointerup=$('fpsUp').onpointerleave=()=>fpsState.keys.w=false;
 $('fpsDown').onpointerdown=()=>fpsState.keys.s=true;$('fpsDown').onpointerup=$('fpsDown').onpointerleave=()=>fpsState.keys.s=false;
 let fpsTouchX=0; $('three3d').addEventListener('pointerdown',e=>{if(fpsState.active&&e.pointerType==='touch'){fpsTouchX=e.clientX}});
 $('three3d').addEventListener('pointermove',e=>{if(fpsState.active&&e.pointerType==='touch'&&e.buttons){threeCamera.rotation.y-=(e.clientX-fpsTouchX)*.004;fpsTouchX=e.clientX}});
 document.addEventListener('mousemove',e=>{if(fpsState.active&&document.pointerLockElement===threeRenderer?.domElement){threeCamera.rotation.y-=e.movementX*.0025;threeCamera.rotation.x=Math.max(-1.2,Math.min(1.2,threeCamera.rotation.x-e.movementY*.002))}});
-function fpsTick(t){requestAnimationFrame(fpsTick);if(!fpsState.active||!threeCamera)return;const dt=Math.min(.05,(t-(fpsState.last||t))/1000);fpsState.last=t;const k=fpsState.keys,speed=8*dt,forward=(k.w||k.arrowup?1:0)-(k.s||k.arrowdown?1:0),side=(k.d?1:0)-(k.a?1:0),yaw=threeCamera.rotation.y;fpsState.x+=Math.sin(yaw)*forward*speed+Math.cos(yaw)*side*speed;fpsState.z+=Math.cos(yaw)*forward*speed-Math.sin(yaw)*side*speed;fpsState.x=Math.max(-20,Math.min(20,fpsState.x));fpsState.z=Math.max(-14,Math.min(14,fpsState.z));threeCamera.position.x=fpsState.x;threeCamera.position.z=fpsState.z;threeCamera.position.y=1.7+fpsState.floor*8;$('fpsFloorLabel').textContent='Andar '+(fpsState.floor+1)+' / '+fpsState.floors;const near=fpsState.objectives.find(o=>!o.done&&Math.hypot(fpsState.x-o.x,fpsState.z-o.z)<4);if(near)$('fpsObjective').textContent='Marcador próximo · pressione E para concluir';}
+function fpsTick(t){requestAnimationFrame(fpsTick);if(!fpsState.active||!threeCamera)return;
+ if(raceState.group&&raceState.car){const dtRace=Math.min(.05,(t-(fpsState.last||t))/1000);fpsState.last=t;const k=raceState.keys;raceState.speed=Math.max(-8,Math.min(28,raceState.speed+((k.w||k.arrowup?18:0)-(k.s||k.arrowdown?25:0)-raceState.speed*1.4)*dtRace));raceState.heading+=((k.a||k.arrowleft?1:0)-(k.d||k.arrowright?1:0))*dtRace*1.8;raceState.car.rotation.y=raceState.heading;raceState.car.position.x-=Math.sin(raceState.heading)*raceState.speed*dtRace;raceState.car.position.z-=Math.cos(raceState.heading)*raceState.speed*dtRace;const car=raceState.car,cp=raceState.checkpoints[raceState.index];if(Math.hypot(car.position.x-cp.x,car.position.z-cp.z)<7){raceState.index++;if(raceState.index>=raceState.checkpoints.length){raceState.index=0;raceState.laps++}$('fpsFloorLabel').textContent='Volta '+raceState.laps+'/3';$('fpsObjective').textContent=raceState.laps>=3?'Corrida concluída!':'Checkpoint alcançado · siga para o próximo portal.'} $('fpsTeamLabel').textContent='Velocidade '+Math.round(Math.abs(raceState.speed)*8)+' km/h';threeCamera.position.set(car.position.x+Math.sin(raceState.heading)*11,7,car.position.z+Math.cos(raceState.heading)*11);threeCamera.lookAt(car.position.x,car.position.y+1,car.position.z);return}
+ const dt=Math.min(.05,(t-(fpsState.last||t))/1000);fpsState.last=t;const k=fpsState.keys,speed=8*dt,forward=(k.w||k.arrowup?1:0)-(k.s||k.arrowdown?1:0),side=(k.d?1:0)-(k.a?1:0),yaw=threeCamera.rotation.y;fpsState.x+=Math.sin(yaw)*forward*speed+Math.cos(yaw)*side*speed;fpsState.z+=Math.cos(yaw)*forward*speed-Math.sin(yaw)*side*speed;fpsState.x=Math.max(-20,Math.min(20,fpsState.x));fpsState.z=Math.max(-14,Math.min(14,fpsState.z));threeCamera.position.x=fpsState.x;threeCamera.position.z=fpsState.z;threeCamera.position.y=1.7+fpsState.floor*8;$('fpsFloorLabel').textContent='Andar '+(fpsState.floor+1)+' / '+fpsState.floors;const near=fpsState.objectives.find(o=>!o.done&&Math.hypot(fpsState.x-o.x,fpsState.z-o.z)<4);if(near)$('fpsObjective').textContent='Marcador próximo · pressione E para concluir';}
 requestAnimationFrame(fpsTick);
 
 window.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z'){e.preventDefault();undo()}if(e.key==='Delete'&&selected){rememberUndo();objects=objects.filter(o=>o.id!==selected);selected=null;refresh();draw()}});
@@ -253,9 +279,9 @@ if(!objects3d.length){objects3d.push({id:'obj3d-inicial',kind:'cube',x:0,y:0,z:0
 const saved=localStorage.getItem('aurora-project');if(saved){try{const p=JSON.parse(saved);objects=p.objects||[];if(Array.isArray(p.objects3d))objects3d=p.objects3d}catch{}}if(!objects.length&&!objects3d.length)add('text');refresh();render3dObjects();switchMode('3D');initThree3D();draw();
 </script>
 <div id="fpsGenerator" aria-hidden="true"><div class="fpsCard">
- <div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><h2>Gerador de jogos · FPS 3D</h2><button id="fpsClose">Fechar ×</button></div>
- <p class="hint">Descreva o jogo. A Aurora monta um protótipo 3D local, sem exigir chave de API.</p>
- <label>Descrição do jogo</label><textarea id="fpsDescription">FPS 3D dentro de um prédio moderno, com equipes, objetivos e vários andares.</textarea>
+ <div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><h2>Gerador de jogos por descrição</h2><button id="fpsClose">Fechar ×</button></div>
+ <p class="hint">Escreva o que deseja criar. A Aurora interpreta a descrição e monta cenário, personagem, controles e objetivos.</p>
+ <label>Tipo de jogo</label><select id="gameGenre"><option value="auto">Detectar pela descrição</option><option value="racing">Corrida 3D</option><option value="fps">FPS 3D</option></select><label>Descrição do jogo</label><textarea id="fpsDescription">FPS 3D dentro de um prédio moderno, com equipes, objetivos e vários andares.</textarea>
  <div class="fpsGrid">
   <div><label>Nome do projeto</label><input id="fpsName" value="Operação Edifício"></div>
   <div><label>Modo</label><select id="fpsMode"><option value="5v5">Equipes 5 contra 5</option><option value="objective">Objetivos em equipe</option><option value="training">Treinamento</option></select></div>
