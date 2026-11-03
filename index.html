@@ -145,6 +145,15 @@ button.primary{background:linear-gradient(135deg,#e2c17e,#b88a43);color:#17120a}
 #three3d canvas{max-width:100%;margin:0 auto}
 @media(max-width:900px){.center{width:100%;min-width:0} .stagewrap{width:100%;min-width:0;justify-content:center} .stage{margin-inline:auto} #viewport3d{flex:1 1 auto}}
 @media(orientation:landscape) and (max-width:900px){#space3d{inset:42px 0 28px;width:100%}#three3d{inset:0;width:100%;height:100%}.stage{width:100%;max-width:100%;margin:0 auto}}
+
+/* Barra de criação 3D sempre acima do canvas WebGL */
+#viewport3d{display:flex;flex-direction:column}
+#viewport3d .view3dbar{position:relative;z-index:20;flex:0 0 auto;width:100%;height:auto;min-height:42px;max-height:34%;overflow-y:auto;overflow-x:hidden;align-content:center;background:#111018f5;pointer-events:auto}
+#viewport3d #space3d{position:relative;z-index:1;inset:auto;flex:1 1 auto;width:100%;min-height:80px;overflow:hidden}
+#viewport3d .view3dhint{position:relative;z-index:5;flex:0 0 28px;height:28px}
+#viewport3d #three3d{z-index:1}
+#viewport3d #three3d canvas{z-index:1}
+@media(max-width:600px){#viewport3d .view3dbar{max-height:42%;padding:7px}#viewport3d #space3d{top:auto;bottom:auto;min-height:100px}#viewport3d .view3dhint{height:32px;flex-basis:32px}}
 </style><script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/"}}</script></head><body>
 <header><div class="brand">AURORA ENGINE<small>GAME CREATION STUDIO · PROTÓTIPO 0.1</small></div><div class="spacer"></div><span class="status" id="status">Projeto local</span><button id="objectsBtn">Objetos</button><button id="libraryBtn">▦ Biblioteca</button><button id="testGameBtn">▷ Testar jogo</button><button id="fpsBtn">✦ Gerar FPS</button><button id="aiBtn">Aurora AI</button><button id="undoBtn">↶ Desfazer</button><button id="saveBtn">Salvar</button><button id="installAppBtn" type="button" title="Instalar na tela inicial">＋ Instalar</button><button id="runBtn" type="button" hidden aria-hidden="true">Executar</button></header>
 <div class="layout">
@@ -649,12 +658,13 @@ function nextRuntimeLevel(){
 }
 function startGamePreview(){
  if(fpsState.active){$('fpsObjective').textContent='Saia da partida atual antes de testar o projeto.';return}
- previewActive=true;running=true;document.body.classList.add('preview-mode');$('previewBar').classList.add('visible');
- $('previewInfo').textContent=is3d?'Jogo 3D · controles e física':'Jogo 2D · controles e física';
+ // O Play abre a cena construída pelo usuário. Não injeta personagem, inimigos,
+ // plataformas ou fases de demonstração automaticamente.
+ previewActive=true;running=true;gameRuntime=null;document.body.classList.add('preview-mode');$('previewBar').classList.add('visible');
+ $('previewInfo').textContent=is3d?'Executando sua cena 3D':'Executando sua cena 2D';
  $('testGameBtn').textContent='■ Jogo em execução';$('runBtn').textContent='■ Parar';
- if(is3d){render3dObjects();update3d();if(threeRenderer)threeRenderer.setSize($('three3d').clientWidth,$('three3d').clientHeight)}
+ if(is3d){if(!threeReady){initThree3D().then(()=>{resizeThree3D();syncThreeObjects()});}else{syncThreeObjects();resizeThree3D()} }
  else{selected=null;draw()}
- beginRuntime();requestAnimationFrame(runtimeStep);
 }
 function stopGamePreview(){
  if(!previewActive)return;previewActive=false;running=false;if(gameRuntime?.player3d)threeScene.remove(gameRuntime.player3d);if(gameRuntime?.enemy3d)gameRuntime.enemy3d.forEach(m=>threeScene.remove(m));gameRuntime=null;runtimeRoot.classList.remove('active');$('gameResult').classList.remove('show');
