@@ -65,8 +65,19 @@ header{height:58px;display:flex;align-items:center;gap:9px;padding:0 13px;border
 .asset-preview{height:76px;border-radius:8px;background:radial-gradient(circle,#3a3042,#15141a);display:grid;place-items:center;font-size:36px;color:var(--gold2)}
 .asset-card b{font-size:12px}.asset-card small{font-size:10px;color:var(--muted);flex:1}.asset-card button{font-size:11px}
 #assetLibrary .hint{margin:5px 0 10px}
+
+body.preview-mode{overflow:hidden}
+body.preview-mode header,body.preview-mode .left,body.preview-mode .right,body.preview-mode .toolbar,body.preview-mode .foot,body.preview-mode #aiRestore{display:none!important}
+body.preview-mode .layout{display:block;height:100dvh}
+body.preview-mode .center{height:100dvh;width:100%;display:block}
+body.preview-mode .stagewrap{position:fixed;inset:54px 0 0;z-index:85;padding:12px;display:grid;place-items:center;background:#08080bf5}
+body.preview-mode .stage{position:relative;width:min(96vw,1500px);height:calc(100dvh - 78px);max-height:none;aspect-ratio:auto;border:1px solid #8b6d38;box-shadow:0 20px 80px #000b}
+body.preview-mode #canvas{width:100%;height:100%;object-fit:contain}
+#previewBar{display:none;position:fixed;z-index:100;left:0;right:0;top:0;height:54px;align-items:center;gap:10px;padding:8px 14px;background:#111115;border-bottom:1px solid #6e5933}
+#previewBar.visible{display:flex}#previewBar strong{color:var(--gold2);font-size:12px;letter-spacing:.08em}#previewBar span{color:var(--muted);font-size:11px;flex:1}
+@media(max-width:600px){body.preview-mode .stagewrap{padding:5px}body.preview-mode .stage{width:100%;height:calc(100dvh - 64px)}#previewBar{height:54px}}
 </style></head><body>
-<header><div class="brand">AURORA ENGINE<small>GAME CREATION STUDIO · PROTÓTIPO 0.1</small></div><div class="spacer"></div><span class="status" id="status">Projeto local</span><button id="objectsBtn">Objetos</button><button id="libraryBtn">▦ Biblioteca</button><button id="fpsBtn">✦ Gerar FPS</button><button id="aiBtn">Aurora AI</button><button id="undoBtn">↶ Desfazer</button><button id="saveBtn">Salvar</button><button class="primary" id="runBtn">▶ Executar</button></header>
+<header><div class="brand">AURORA ENGINE<small>GAME CREATION STUDIO · PROTÓTIPO 0.1</small></div><div class="spacer"></div><span class="status" id="status">Projeto local</span><button id="objectsBtn">Objetos</button><button id="libraryBtn">▦ Biblioteca</button><button id="testGameBtn">▷ Testar jogo</button><button id="fpsBtn">✦ Gerar FPS</button><button id="aiBtn">Aurora AI</button><button id="undoBtn">↶ Desfazer</button><button id="saveBtn">Salvar</button><button class="primary" id="runBtn">▶ Executar</button></header>
 <div class="layout">
 <aside class="panel left" id="objectsPanel"><div class="sect"><div class="panel-head"><h3>Objetos</h3><button class="back-panel" id="backObjects" type="button">← Voltar</button></div></div><div class="sect"><h3>Criar objeto</h3><div class="tools"><button data-add="rect">▰ Retângulo</button><button data-add="circle">● Círculo</button><button data-add="text">T Texto</button><button data-add="star">✦ Estrela</button><button data-add="character">♟ Personagem</button><button data-add="sprite">▧ Sprite</button><button data-add="platform">▱ Plataforma</button><button data-add="scenario">▦ Cenário</button><button data-add="collision">▣ Colisão</button></div></div><div class="sect"><h3>Hierarquia</h3><div class="tree" id="tree"></div></div><div class="sect"><h3>Cena</h3><button id="clearScene">Nova cena vazia</button></div></aside>
 <main class="center"><nav class="toolbar"><button id="mode3d" class="active" type="button">Cena 3D</button><button id="mode2d" type="button">Cena 2D</button><button id="codeBtn">Código</button><button id="gridBtn" class="active">Grade</button><button id="exportBtn">Exportar projeto</button><button id="importBtn">Importar projeto</button><input id="file" type="file" accept=".json" hidden></nav><div class="stagewrap"><div class="stage"><canvas id="canvas" width="1280" height="720"></canvas><div id="viewport3d" hidden><div class="view3dbar"><span>VISTA 3D · ARRASTE PARA GIRAR</span><button id="addCube3d" type="button">+ Cubo</button><button id="addSphere3d" type="button">+ Esfera</button><button id="addTerrain3d" type="button">+ Terreno</button><button id="addBuilding3d" type="button">+ Prédio</button><button id="addCharacter3d" type="button">+ Personagem</button><button id="addTree3d" type="button">+ Árvore</button><button id="addCamera3d" type="button">+ Câmera</button><button id="addLight3d" type="button">+ Luz</button><button id="zoomOut3d" type="button" title="Afastar">−</button><input id="zoomRange3d" type="range" min="0.4" max="3" step="0.05" value="1" aria-label="Zoom da cena 3D" style="width:76px;accent-color:#d7ad58"><button id="zoomIn3d" type="button" title="Aproximar">+</button><button id="focus3d" type="button">Focar item</button><button id="reset3d" type="button">Centralizar</button><button id="fullscreen3d" type="button">Tela cheia</button></div><div id="space3d"><div id="three3d" aria-label="Cena 3D renderizada"></div><div id="world3d"><div id="grid3d"></div><div id="axisX"></div><div id="axisZ"></div><div id="objects3d"></div></div></div><div class="view3dhint">Toque/arraste para girar · Use dois dedos ou roda para ajustar a vista</div></div></div></div><div id="codeWorkspace" hidden><div class="codeHead"><b>EDITOR DE CÓDIGO</b><button id="closeCode">Fechar</button></div><p>Use a API <code>aurora.criar</code>, <code>aurora.cor</code> e <code>aurora.pular</code>.</p><textarea id="gameCode" spellcheck="false">// Exemplo: crie objetos nas cenas 2D e 3D
@@ -350,6 +361,23 @@ function useLibraryAsset(id){
 }
 $('libraryBtn').onclick=()=>{$('assetLibrary').classList.add('open');renderAssetLibrary()};
 $('assetClose').onclick=()=>$('assetLibrary').classList.remove('open');
+
+let previewActive=false;
+function startGamePreview(){
+ if(fpsState.active){$('fpsObjective').textContent='Saia da partida atual antes de abrir a pré-visualização.';return}
+ previewActive=true;running=true;document.body.classList.add('preview-mode');$('previewBar').classList.add('visible');
+ $('previewInfo').textContent=is3d?'Cena 3D · pré-visualização':'Cena 2D · pré-visualização';
+ $('testGameBtn').textContent='■ Pré-visualizando';$('runBtn').textContent='■ Parar';
+ if(is3d){render3dObjects();update3d();if(threeRenderer)threeRenderer.setSize($('three3d').clientWidth,$('three3d').clientHeight)}
+ else{selected=null;draw()}
+}
+function stopGamePreview(){
+ if(!previewActive)return;previewActive=false;running=false;document.body.classList.remove('preview-mode');$('previewBar').classList.remove('visible');
+ $('testGameBtn').textContent='▷ Testar jogo';$('runBtn').textContent='▶ Executar';refresh();if(is3d)update3d();else draw()
+}
+$('testGameBtn').onclick=startGamePreview;
+$('stopPreview').onclick=stopGamePreview;
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&previewActive)stopGamePreview()});
 </script>
 <div id="fpsGenerator" aria-hidden="true"><div class="fpsCard">
  <div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><h2>Gerador de jogos por descrição</h2><button id="fpsClose">Fechar ×</button></div>
@@ -369,4 +397,4 @@ $('assetClose').onclick=()=>$('assetLibrary').classList.remove('open');
  <button id="fpsExit">Sair da partida</button><div id="fpsCross">＋</div>
  <div id="fpsObjective">Objetivo: procure o ponto marcado e pressione E</div>
  <div id="fpsControls"><button id="fpsUp">▲</button><button id="fpsInteract">AÇÃO · E</button><button id="fpsDown">▼</button><button id="fpsShoot">DISPARAR</button><button id="fpsFloor">SUBIR</button></div>
-</div><div id="assetLibrary" aria-hidden="true"><div class="asset-shell"><div class="asset-head"><div><h2>Biblioteca de Recursos</h2><div class="hint">Recursos locais e procedurais para montar suas cenas.</div></div><button id="assetClose">Fechar ×</button></div><div class="asset-tabs" id="assetTabs"></div><div id="assetGrid" class="asset-grid"></div><div class="hint" id="assetStatus" style="margin-top:12px">Escolha um recurso para adicionar, aplicar ou ouvir.</div></div></div></body></html>
+</div><div id="assetLibrary" aria-hidden="true"><div class="asset-shell"><div class="asset-head"><div><h2>Biblioteca de Recursos</h2><div class="hint">Recursos locais e procedurais para montar suas cenas.</div></div><button id="assetClose">Fechar ×</button></div><div class="asset-tabs" id="assetTabs"></div><div id="assetGrid" class="asset-grid"></div><div class="hint" id="assetStatus" style="margin-top:12px">Escolha um recurso para adicionar, aplicar ou ouvir.</div></div></div><div id="previewBar"><strong>PRÉ-VISUALIZAÇÃO</strong><span id="previewInfo">Teste do projeto atual</span><button id="stopPreview" class="primary">■ Voltar ao editor</button></div></body></html>
