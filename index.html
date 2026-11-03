@@ -13,11 +13,15 @@ header{height:58px;display:flex;align-items:center;gap:9px;padding:0 13px;border
 .ai-title{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}
 .ai-title h3{margin:0}
 .ai-title button{padding:5px 9px;font-size:11px;white-space:nowrap}
-.layout.ai-collapsed{grid-template-columns:205px minmax(0,1fr)}\n.layout.ai-collapsed .right{display:none}\n.panel-head{display:flex;align-items:center;justify-content:space-between;gap:8px}\n.panel-head h3{margin:0}\n#minimizeAI{padding:4px 10px;font-size:17px;line-height:1;border-color:var(--gold);color:var(--gold2)}
+.layout.ai-collapsed{grid-template-columns:205px minmax(0,1fr)}
+.layout.ai-collapsed .right{display:none!important}
+.panel-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.panel-head h3{margin:0}
+#minimizeAI{padding:4px 10px;font-size:17px;line-height:1;border-color:var(--gold);color:var(--gold2)}
 #aiRestore{position:fixed;right:16px;bottom:18px;z-index:30;display:none;align-items:center;justify-content:center;width:48px;height:48px;padding:0;border:1px solid var(--gold);border-radius:50%;background:#19150e;color:var(--gold2);box-shadow:0 8px 28px #0009;font-size:23px;font-weight:800}
 #aiRestore.visible{display:flex}
 
-@media(max-width:900px){.layout.ai-collapsed{grid-template-columns:1fr}#aiRestore{right:12px;bottom:12px}}
+@media(max-width:900px){.layout.ai-collapsed{grid-template-columns:minmax(0,1fr)}.layout.ai-collapsed .right{display:none!important}#aiRestore{right:12px;bottom:12px}}
 
 </style></head><body>
 <header><div class="brand">AURORA ENGINE<small>GAME CREATION STUDIO · PROTÓTIPO 0.1</small></div><div class="spacer"></div><span class="status" id="status">Projeto local</span><button id="objectsBtn">Objetos</button><button id="aiBtn">Aurora AI</button><button id="undoBtn">↶ Desfazer</button><button id="saveBtn">Salvar</button><button class="primary" id="runBtn">▶ Executar</button></header>
@@ -76,5 +80,6 @@ $('aiRestore').onclick=()=>setAIVisible(true);
 $('objectsBtn').onclick=()=>{$('objectsPanel').classList.toggle('open');$('rightPanel').classList.remove('open')};
 $('aiBtn').onclick=()=>{setAIVisible(true);$('objectsPanel').classList.remove('open')};
 $('sendAI').onclick=async()=>{let prompt=$('aiPrompt').value.trim();if(!prompt)return; $('aiPrompt').value='';try{await ai.ask(prompt)}catch(e){ai.showError(e.message)}};
-window.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z'){e.preventDefault();undo()}if(e.key==='Delete'&&selected){rememberUndo();objects=objects.filter(o=>o.id!==selected);selected=null;refresh();draw()}});\nconst saved=localStorage.getItem('aurora-project');if(saved){try{objects=JSON.parse(saved).objects||[]}catch{}}if(!objects.length)add('text');refresh();draw();
+window.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z'){e.preventDefault();undo()}if(e.key==='Delete'&&selected){rememberUndo();objects=objects.filter(o=>o.id!==selected);selected=null;refresh();draw()}});
+const saved=localStorage.getItem('aurora-project');if(saved){try{objects=JSON.parse(saved).objects||[]}catch{}}if(!objects.length)add('text');refresh();draw();
 </script></body></html>
