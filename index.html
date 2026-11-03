@@ -36,7 +36,7 @@ function applyAIActions(actions){
    const o=objects.find(v=>v.id===a.id)||objects.find(v=>v.name===a.name);if(!o)continue;
    rememberUndo();const c=a.changes||{};if(typeof c.name==='string')o.name=c.name.slice(0,60);for(const k of ['x','y','w','h','fontSize'])if(Number.isFinite(Number(c[k]))){const lim={x:[0,1280],y:[0,720],w:[10,700],h:[10,700],fontSize:[8,160]}[k];o[k]=Math.max(lim[0],Math.min(lim[1],Number(c[k])))}if(validColor(c.color))o.color=c.color;if(typeof c.text==='string')o.text=c.text.slice(0,200);changed=true;
   }else if(a.type==='delete_object'){
-   const n=objects.length;objects=objects.filter(o=>o.id!==a.id&&o.name!==a.name);if(objects.length!==n){rememberUndo();changed=true}
+   const n=objects.length;if(objects.some(o=>o.id===a.id||o.name===a.name))rememberUndo();objects=objects.filter(o=>o.id!==a.id&&o.name!==a.name);if(objects.length!==n)changed=true
   }
  }
  if(changed){selected=null;refresh();draw();$('status').textContent='Aurora AI atualizou a cena'}
