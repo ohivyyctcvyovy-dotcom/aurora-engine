@@ -55,8 +55,18 @@ header{height:58px;display:flex;align-items:center;gap:9px;padding:0 13px;border
 #fpsControls button{background:#17151dcc;border-color:#d7ad58;min-width:62px;min-height:54px}
 #fpsExit{position:absolute;top:62px;right:12px;pointer-events:auto}
 @media(max-width:650px){.fpsGrid{grid-template-columns:1fr}#fpsTop{font-size:10px}#fpsControls button{min-width:56px;min-height:50px}}
+
+#assetLibrary{position:fixed;inset:0;z-index:70;background:#07070bea;display:none;overflow:auto;padding:16px}
+#assetLibrary.open{display:block}.asset-shell{max-width:1050px;margin:12px auto;background:#111115;border:1px solid #59472a;border-radius:14px;padding:16px;box-shadow:0 20px 70px #000b}
+.asset-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}.asset-head h2{margin:0;color:var(--gold2)}
+.asset-tabs{display:flex;gap:6px;overflow:auto;padding:12px 0}.asset-tabs button{white-space:nowrap}.asset-tabs button.active{background:#302718;border-color:var(--gold);color:var(--gold2)}
+.asset-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.asset-card{border:1px solid var(--line);background:#19191f;border-radius:10px;padding:10px;display:flex;flex-direction:column;gap:8px;min-height:145px}
+.asset-preview{height:76px;border-radius:8px;background:radial-gradient(circle,#3a3042,#15141a);display:grid;place-items:center;font-size:36px;color:var(--gold2)}
+.asset-card b{font-size:12px}.asset-card small{font-size:10px;color:var(--muted);flex:1}.asset-card button{font-size:11px}
+#assetLibrary .hint{margin:5px 0 10px}
 </style></head><body>
-<header><div class="brand">AURORA ENGINE<small>GAME CREATION STUDIO · PROTÓTIPO 0.1</small></div><div class="spacer"></div><span class="status" id="status">Projeto local</span><button id="objectsBtn">Objetos</button><button id="fpsBtn">✦ Gerar FPS</button><button id="aiBtn">Aurora AI</button><button id="undoBtn">↶ Desfazer</button><button id="saveBtn">Salvar</button><button class="primary" id="runBtn">▶ Executar</button></header>
+<header><div class="brand">AURORA ENGINE<small>GAME CREATION STUDIO · PROTÓTIPO 0.1</small></div><div class="spacer"></div><span class="status" id="status">Projeto local</span><button id="objectsBtn">Objetos</button><button id="libraryBtn">▦ Biblioteca</button><button id="fpsBtn">✦ Gerar FPS</button><button id="aiBtn">Aurora AI</button><button id="undoBtn">↶ Desfazer</button><button id="saveBtn">Salvar</button><button class="primary" id="runBtn">▶ Executar</button></header>
 <div class="layout">
 <aside class="panel left" id="objectsPanel"><div class="sect"><div class="panel-head"><h3>Objetos</h3><button class="back-panel" id="backObjects" type="button">← Voltar</button></div></div><div class="sect"><h3>Criar objeto</h3><div class="tools"><button data-add="rect">▰ Retângulo</button><button data-add="circle">● Círculo</button><button data-add="text">T Texto</button><button data-add="star">✦ Estrela</button><button data-add="character">♟ Personagem</button><button data-add="sprite">▧ Sprite</button><button data-add="platform">▱ Plataforma</button><button data-add="scenario">▦ Cenário</button><button data-add="collision">▣ Colisão</button></div></div><div class="sect"><h3>Hierarquia</h3><div class="tree" id="tree"></div></div><div class="sect"><h3>Cena</h3><button id="clearScene">Nova cena vazia</button></div></aside>
 <main class="center"><nav class="toolbar"><button id="mode3d" class="active" type="button">Cena 3D</button><button id="mode2d" type="button">Cena 2D</button><button id="codeBtn">Código</button><button id="gridBtn" class="active">Grade</button><button id="exportBtn">Exportar projeto</button><button id="importBtn">Importar projeto</button><input id="file" type="file" accept=".json" hidden></nav><div class="stagewrap"><div class="stage"><canvas id="canvas" width="1280" height="720"></canvas><div id="viewport3d" hidden><div class="view3dbar"><span>VISTA 3D · ARRASTE PARA GIRAR</span><button id="addCube3d" type="button">+ Cubo</button><button id="addSphere3d" type="button">+ Esfera</button><button id="addTerrain3d" type="button">+ Terreno</button><button id="addBuilding3d" type="button">+ Prédio</button><button id="addCharacter3d" type="button">+ Personagem</button><button id="addTree3d" type="button">+ Árvore</button><button id="addCamera3d" type="button">+ Câmera</button><button id="addLight3d" type="button">+ Luz</button><button id="zoomOut3d" type="button" title="Afastar">−</button><input id="zoomRange3d" type="range" min="0.4" max="3" step="0.05" value="1" aria-label="Zoom da cena 3D" style="width:76px;accent-color:#d7ad58"><button id="zoomIn3d" type="button" title="Aproximar">+</button><button id="focus3d" type="button">Focar item</button><button id="reset3d" type="button">Centralizar</button><button id="fullscreen3d" type="button">Tela cheia</button></div><div id="space3d"><div id="three3d" aria-label="Cena 3D renderizada"></div><div id="world3d"><div id="grid3d"></div><div id="axisX"></div><div id="axisZ"></div><div id="objects3d"></div></div></div><div class="view3dhint">Toque/arraste para girar · Use dois dedos ou roda para ajustar a vista</div></div></div></div><div id="codeWorkspace" hidden><div class="codeHead"><b>EDITOR DE CÓDIGO</b><button id="closeCode">Fechar</button></div><p>Use a API <code>aurora.criar</code>, <code>aurora.cor</code> e <code>aurora.pular</code>.</p><textarea id="gameCode" spellcheck="false">// Exemplo: crie objetos nas cenas 2D e 3D
@@ -291,6 +301,55 @@ requestAnimationFrame(fpsTick);
 
 window.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z'){e.preventDefault();undo()}if(e.key==='Delete'&&selected){rememberUndo();objects=objects.filter(o=>o.id!==selected);selected=null;refresh();draw()}});
 const saved=localStorage.getItem('aurora-project');if(saved){try{const p=JSON.parse(saved);objects=p.objects||[];if(Array.isArray(p.objects3d))objects3d=p.objects3d}catch{}}if(!objects3d.length){objects3d.push({id:'obj3d-inicial',kind:'cube',name:'Cubo',color:0xd7ad58,x:0,y:0,z:0,sx:1,sy:1,sz:1,rx:0,ry:0,rz:0});extra3dCount=1;selected3d='obj3d-inicial'}else{extra3dCount=objects3d.length;selected3d=objects3d[0]?.id||null}if(!objects.length&&!objects3d.length)add('text');refresh();render3dObjects();switchMode('3D');initThree3D();draw();function editor2dTick(){if(!is3d&&running&&objects.some(o=>o.animated))draw();requestAnimationFrame(editor2dTick)}requestAnimationFrame(editor2dTick);
+
+const libraryItems=[
+ {id:'hero',cat:'Personagens',name:'Aventureiro',icon:'♟',desc:'Personagem vetorial para jogos 2D.',type:'character',color:'#d7ad58'},
+ {id:'mage',cat:'Personagens',name:'Mago',icon:'♙',desc:'Personagem mágico estilizado.',type:'character',color:'#9b83d5'},
+ {id:'robot',cat:'Personagens',name:'Robô',icon:'▣',desc:'Personagem mecânico vetorial.',type:'character',color:'#75a9d6'},
+ {id:'crate',cat:'Objetos',name:'Caixa',icon:'▧',desc:'Objeto de cenário selecionável.',type:'rect',color:'#9b7650'},
+ {id:'coin',cat:'Objetos',name:'Moeda',icon:'◉',desc:'Coletável circular.',type:'circle',color:'#f1d18a'},
+ {id:'star',cat:'Objetos',name:'Estrela',icon:'✦',desc:'Elemento decorativo.',type:'star',color:'#f1d18a'},
+ {id:'forest',cat:'Cenários',name:'Floresta',icon:'🌲',desc:'Fundo inicial em tons verdes.',type:'scenario',color:'#183d32'},
+ {id:'night',cat:'Cenários',name:'Noite',icon:'☾',desc:'Fundo escuro para fase noturna.',type:'scenario',color:'#10172d'},
+ {id:'space',cat:'Cenários',name:'Espaço',icon:'✧',desc:'Fundo cósmico.',type:'scenario',color:'#21143d'},
+ {id:'stone',cat:'Texturas',name:'Pedra',icon:'▦',desc:'Aplicar paleta de pedra ao objeto selecionado.',color:'#777782'},
+ {id:'wood',cat:'Texturas',name:'Madeira',icon:'▤',desc:'Aplicar paleta de madeira ao objeto selecionado.',color:'#95663e'},
+ {id:'gold',cat:'Texturas',name:'Dourado',icon:'▧',desc:'Aplicar paleta metálica dourada.',color:'#d7ad58'},
+ {id:'walk',cat:'Animações',name:'Movimento',icon:'➜',desc:'Alterna animação procedural no personagem.',animated:true},
+ {id:'idle',cat:'Animações',name:'Parado',icon:'♙',desc:'Desativa animação do personagem.',animated:false},
+ {id:'pulse',cat:'Animações',name:'Pulsar',icon:'◉',desc:'Ativa animação no sprite selecionado.',animated:true},
+ {id:'click',cat:'Sons',name:'Clique',icon:'♪',desc:'Efeito sonoro curto gerado no navegador.',sound:[660,.08]},
+ {id:'jump',cat:'Sons',name:'Salto',icon:'♫',desc:'Tom ascendente simples.',sound:[440,.16]},
+ {id:'collect',cat:'Sons',name:'Coletar',icon:'♬',desc:'Som curto de recompensa.',sound:[880,.12]}
+];
+let assetCategory='Todos';
+function renderAssetLibrary(){
+ const cats=['Todos','Personagens','Objetos','Sons','Cenários','Texturas','Animações'];
+ $('assetTabs').innerHTML=cats.map(c=>'<button class="'+(assetCategory===c?'active':'')+'" data-cat="'+c+'">'+c+'</button>').join('');
+ $('assetGrid').innerHTML=libraryItems.filter(a=>assetCategory==='Todos'||a.cat===assetCategory).map(a=>'<article class="asset-card"><div class="asset-preview">'+a.icon+'</div><b>'+a.name+'</b><small>'+a.desc+'</small><button data-asset="'+a.id+'">'+(a.cat==='Sons'?'▶ Ouvir':a.cat==='Texturas'?'Aplicar textura':a.cat==='Animações'?'Aplicar animação':'＋ Adicionar')+'</button></article>').join('');
+ $('assetTabs').querySelectorAll('[data-cat]').forEach(b=>b.onclick=()=>{assetCategory=b.dataset.cat;renderAssetLibrary()});
+ $('assetGrid').querySelectorAll('[data-asset]').forEach(b=>b.onclick=()=>useLibraryAsset(b.dataset.asset));
+}
+function playLibraryTone(freq,duration){
+ try{const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return;const ac=new AC(),osc=ac.createOscillator(),gain=ac.createGain();osc.type='sine';osc.frequency.value=freq;gain.gain.setValueAtTime(.0001,ac.currentTime);gain.gain.exponentialRampToValueAtTime(.12,ac.currentTime+.015);gain.gain.exponentialRampToValueAtTime(.0001,ac.currentTime+duration);osc.connect(gain);gain.connect(ac.destination);osc.start();osc.stop(ac.currentTime+duration+.02);osc.onended=()=>ac.close()}catch(e){$('assetStatus').textContent='O navegador não permitiu reproduzir o som.'}
+}
+function useLibraryAsset(id){
+ const a=libraryItems.find(x=>x.id===id);if(!a)return;
+ if(a.cat==='Sons'){playLibraryTone(a.sound[0],a.sound[1]);$('assetStatus').textContent='Reproduzindo: '+a.name;return}
+ if(a.cat==='Texturas'||a.cat==='Animações'){
+  const o=objects.find(x=>x.id===selected);
+  if(!o){$('assetStatus').textContent='Selecione primeiro um objeto na cena 2D.';return}
+  rememberUndo();if(a.cat==='Texturas')o.color=a.color;else o.animated=a.animated;refresh();draw();$('assetStatus').textContent=a.name+' aplicado a '+o.name+'.';return;
+ }
+ if(is3d&&a.cat!=='Cenários'){
+  const kind=a.type==='circle'?'sphere':a.type==='character'?'character':'cube';
+  const ob={id:'asset3d-'+crypto.randomUUID(),kind,name:a.name,color:parseInt(a.color.slice(1),16),x:0,y:0,z:0,sx:1,sy:1,sz:1,rx:0,ry:0,rz:0};
+  objects3d.push(ob);selected3d=ob.id;render3dObjects();$('assetStatus').textContent=a.name+' adicionado à cena 3D.';return;
+ }
+ add(a.type);const o=objects.find(x=>x.id===selected);if(o){o.name=a.name;o.color=a.color;o.animated=!!a.animated;refresh();draw()}$('assetStatus').textContent=a.name+' adicionado à cena.';
+}
+$('libraryBtn').onclick=()=>{$('assetLibrary').classList.add('open');renderAssetLibrary()};
+$('assetClose').onclick=()=>$('assetLibrary').classList.remove('open');
 </script>
 <div id="fpsGenerator" aria-hidden="true"><div class="fpsCard">
  <div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><h2>Gerador de jogos por descrição</h2><button id="fpsClose">Fechar ×</button></div>
@@ -310,4 +369,4 @@ const saved=localStorage.getItem('aurora-project');if(saved){try{const p=JSON.pa
  <button id="fpsExit">Sair da partida</button><div id="fpsCross">＋</div>
  <div id="fpsObjective">Objetivo: procure o ponto marcado e pressione E</div>
  <div id="fpsControls"><button id="fpsUp">▲</button><button id="fpsInteract">AÇÃO · E</button><button id="fpsDown">▼</button><button id="fpsShoot">DISPARAR</button><button id="fpsFloor">SUBIR</button></div>
-</div></body></html>
+</div><div id="assetLibrary" aria-hidden="true"><div class="asset-shell"><div class="asset-head"><div><h2>Biblioteca de Recursos</h2><div class="hint">Recursos locais e procedurais para montar suas cenas.</div></div><button id="assetClose">Fechar ×</button></div><div class="asset-tabs" id="assetTabs"></div><div id="assetGrid" class="asset-grid"></div><div class="hint" id="assetStatus" style="margin-top:12px">Escolha um recurso para adicionar, aplicar ou ouvir.</div></div></div></body></html>
