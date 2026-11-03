@@ -175,6 +175,15 @@ button.primary{background:linear-gradient(135deg,#e2c17e,#b88a43);color:#17120a}
 #viewport3d #space3d{inset:0 calc(var(--dock-width) + 20px) 28px 0}
 #viewport3d .view3dhint{right:calc(var(--dock-width) + 20px);text-align:left;padding-left:12px}
 @media(max-width:900px){#viewport3d{--dock-width:clamp(104px,25vw,138px)}#viewport3d .view3dbar{top:6px;bottom:40px;right:5px;padding:6px;gap:5px}#viewport3d .view3dbar button{min-height:40px;font-size:11px}#viewport3d #space3d{inset:0 calc(var(--dock-width) + 12px) 34px 0}#viewport3d .view3dhint{right:calc(var(--dock-width) + 12px);height:34px;font-size:9px;padding:8px 4px}}
+
+/* Barra 3D horizontal no lado esquerdo, sem ocupar a lateral direita */
+#viewport3d .view3dbar{position:absolute!important;left:8px!important;right:auto!important;top:8px!important;bottom:auto!important;width:min(76%,760px)!important;height:auto!important;max-height:34%!important;display:flex!important;flex-direction:row!important;flex-wrap:wrap!important;align-items:center!important;justify-content:flex-start!important;overflow-y:auto!important;overflow-x:hidden!important;border:1px solid #6e5933!important;border-radius:10px!important;background:#111018ed!important;box-shadow:0 8px 28px #0008!important}
+#viewport3d .view3dbar span{flex:1 1 100%!important;min-width:100%!important;text-align:left!important}
+#viewport3d .view3dbar button{flex:0 1 auto!important;width:auto!important;min-width:70px!important;min-height:36px!important}
+#viewport3d .view3dbar input[type=range]{width:90px!important;min-width:70px!important;flex:0 1 90px!important}
+#viewport3d #space3d{inset:0!important;width:100%!important}
+#viewport3d .view3dhint{right:0!important;text-align:center!important;padding-left:6px!important}
+@media(max-width:900px){#viewport3d .view3dbar{left:5px!important;top:5px!important;width:min(82%,560px)!important;max-height:42%!important;padding:6px!important;gap:5px!important}#viewport3d .view3dbar button{min-width:calc(33.333% - 8px)!important;font-size:11px!important;min-height:38px!important}#viewport3d .view3dbar span{font-size:9px!important}}
 </style><script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/"}}</script></head><body>
 <header><div class="brand">AURORA ENGINE<small>GAME CREATION STUDIO · PROTÓTIPO 0.1</small></div><div class="spacer"></div><span class="status" id="status">Projeto local</span><button id="objectsBtn">Objetos</button><button id="libraryBtn">▦ Biblioteca</button><button id="testGameBtn">▷ Testar jogo</button><button id="fpsBtn">✦ Gerar FPS</button><button id="aiBtn">Aurora AI</button><button id="undoBtn">↶ Desfazer</button><button id="saveBtn">Salvar</button><button id="installAppBtn" type="button" title="Instalar na tela inicial">＋ Instalar</button><button id="runBtn" type="button" hidden aria-hidden="true">Executar</button></header>
 <div class="layout">
@@ -513,7 +522,7 @@ $('logicObject').onchange=()=>{logicDraftObject=$('logicObject').value;renderLog
 $('logicAdd').onclick=()=>{const o=logicObjectRef(logicDraftObject);if(!o){$('logicStatus').textContent='Crie ou selecione um objeto primeiro.';return}o.logic=o.logic||[];o.logic.push({event:$('logicEvent').value,action:$('logicAction').value,key:$('logicKey').value,value:Math.max(1,Number($('logicValue').value)||1)});renderLogicBlocks();$('logicStatus').textContent='Bloco adicionado. Salve para manter no projeto.'};
 $('logicSave').onclick=()=>{const o=logicObjectRef(logicDraftObject);if(!o)return;$('logicStatus').textContent='Lógica salva no objeto '+(o.name||o.kind||o.type)+'. Use Exportar projeto para guardar uma cópia.';try{localStorage.setItem('aurora-project',JSON.stringify({objects,objects3d}))}catch(e){$('logicStatus').textContent='Lógica vinculada ao objeto; armazenamento local indisponível.'}};
 
-let previewActive=false,gameRuntime=null;
+let previewActive=false,gameRuntime=null,logicPreview=false;
 const runtimeStyle=document.createElement('style');
 runtimeStyle.textContent=`
 #gameRuntime{position:absolute;inset:0;z-index:92;display:none;pointer-events:none;font:13px system-ui;color:#fff}
@@ -564,6 +573,8 @@ function runtimeObjectPosition(o){
 }
 function runtimePlayerPosition(){
  const g=gameRuntime;if(!g)return null;
+ if(g.logicOnly&&is3d&&g.player3d)return g.player3d.position;
+ if(g.logicOnly&&!is3d){const actor=objects.find(o=>o.id===g.actorId);return actor?{x:actor.x,y:actor.y,z:0}:null}
  return is3d&&g.player3d?g.player3d.position:{x:g.x+g.w/2,y:g.y+g.h/2,z:0};
 }
 function runLogicAction(o,rule,dt=0){
@@ -653,9 +664,19 @@ function finishRuntime(win){
  $('gameNext').style.display=win?'inline-block':'none';$('gameResult').classList.add('show');
 }
 function runtimeStep(t){
- requestAnimationFrame(runtimeStep);if(!previewActive||!gameRuntime)return;
+ if(!previewActive)return;
+ requestAnimationFrame(runtimeStep);if(!gameRuntime)return;
  const g=gameRuntime,dt=Math.min(.033,(t-(g.last||t))/1000);g.last=t;if(g.finished)return;
- checkVisualLogic('near',null,dt);checkVisualLogic('touch',null,dt);checkVisualLogic('collision',null,dt);if(is3d){stepRuntime3d(g,dt);return}
+ checkVisualLogic('near',null,dt);checkVisualLogic('touch',null,dt);checkVisualLogic('collision',null,dt);
+ if(g.logicOnly){
+  const actor=is3d?objects3d.find(o=>o.id===g.actorId):objects.find(o=>o.id===g.actorId);
+  if(actor){const left=gameKeys.a||gameKeys.arrowleft,right=gameKeys.d||gameKeys.arrowright,up=gameKeys.w||gameKeys.arrowup,down=gameKeys.s||gameKeys.arrowdown;
+   if(is3d&&g.player3d){g.player3d.position.x+=((right?1:0)-(left?1:0))*5*dt;g.player3d.position.z+=((down?1:0)-(up?1:0))*5*dt;actor.x=g.player3d.position.x;actor.y=g.player3d.position.y;actor.z=g.player3d.position.z;threeCamera.position.lerp(new THREE.Vector3(g.player3d.position.x+5,g.player3d.position.y+4,g.player3d.position.z+8),Math.min(1,dt*4));threeCamera.lookAt(g.player3d.position)}
+   else{actor.x=Math.max(0,Math.min(1280,actor.x+((right?1:0)-(left?1:0))*260*dt));actor.y=Math.max(0,Math.min(720,actor.y+((down?1:0)-(up?1:0))*260*dt));g.x=actor.x-(actor.w||50)/2;g.y=actor.y-(actor.h||50)/2;draw()}
+  }
+  return;
+ }
+ if(is3d){stepRuntime3d(g,dt);return}
  const left=gameKeys.a||gameKeys.arrowleft,right=gameKeys.d||gameKeys.arrowright;
  g.vx=((right?1:0)-(left?1:0))*260;g.x=Math.max(0,Math.min(1240-g.w,g.x+g.vx*dt));
  if((gameKeys[' ']||gameKeys.w||gameKeys.arrowup)&&g.onGround){g.vy=-560;g.onGround=false}
@@ -678,21 +699,33 @@ function nextRuntimeLevel(){
  spawnRuntimeEnemies();$('gameResult').classList.remove('show');$('gameMessage').textContent='Nova fase: '+g.level+'. Elimine '+g.goal+' inimigos.';updateRuntimeStats();
 }
 function startGamePreview(){
- if(fpsState.active){$('fpsObjective').textContent='Saia da partida FPS antes de testar seu projeto.';return}
- // Teste fiel: exibe exclusivamente os objetos e a lógica que o usuário montou.
- // Não chama beginRuntime() nem cria jogador, inimigos, fases ou cenário de demonstração.
- previewActive=true;running=true;gameRuntime=null;
+ if(fpsState.active){$('fpsObjective').textContent='Feche a prévia atual antes de testar seu projeto.';return}
+ previewActive=true;running=true;logicPreview=true;
  document.body.classList.add('preview-mode');$('previewBar').classList.add('visible');
- const count=is3d?objects3d.length:objects.length;
- $('previewInfo').textContent=(is3d?'Projeto 3D':'Projeto 2D')+' · '+count+' objetos da sua cena';
- $('testGameBtn').textContent='■ Parar teste';$('runBtn').textContent='■ Parar';
- if(is3d){
-  const ready=()=>{resizeThree3D();syncThreeObjects();if(objects3d.length){const box=new THREE.Box3();for(const mesh of threeMeshes.values())box.expandByObject(mesh);if(!box.isEmpty()){const center=box.getCenter(new THREE.Vector3());threeCamera.lookAt(center)}}};
-  if(!threeReady)initThree3D().then(ready);else ready();
- }else{selected=null;draw()}
+ const list=is3d?objects3d:objects;
+ let actor=is3d?objects3d.find(o=>o.kind==='character'):objects.find(o=>o.type==='character'||o.type==='sprite');
+ if(!actor)actor=list.find(Boolean);
+ if(is3d&&!threeReady){
+  initThree3D().then(()=>startGamePreviewReady(actor));
+ }else startGamePreviewReady(actor);
 }
+function startGamePreviewReady(actor){
+ if(!previewActive)return;
+ if(is3d){resizeThree3D();syncThreeObjects()}
+ if(!actor){$('previewInfo').textContent='Adicione um personagem ou objeto à cena para iniciar a lógica.';gameRuntime=null;return}
+ const mesh=is3d?threeMeshes.get(actor.id):null;
+ if(is3d&&!mesh){$('previewInfo').textContent='Não foi possível preparar o personagem 3D.';gameRuntime=null;return}
+ gameRuntime={logicOnly:true,actorId:actor.id,player3d:mesh||null,x:is3d?0:actor.x-(actor.w||50)/2,y:is3d?0:actor.y-(actor.h||50)/2,w:actor.w||50,h:actor.h||50,vx:0,vy:0,vz:0,onGround:true,hp:100,score:0,level:1,kills:0,goal:0,enemies:[],platforms:[],last:0,finished:false};
+ $('previewInfo').textContent=(is3d?'Projeto 3D':'Projeto 2D')+' · lógica ativa · personagem: '+(actor.name||actor.kind||actor.type);
+ $('testGameBtn').textContent='■ Parar teste';$('runBtn').textContent='■ Parar';
+ $('gameMessage').textContent='Controles: WASD/setas ou controles de toque. As regras dos objetos estão ativas.';
+ runtimeRoot.classList.add('active');$('gameResult').classList.remove('show');
+ checkVisualLogic('start');requestAnimationFrame(runtimeStep);
+ if(!is3d)draw();
+}
+
 function stopGamePreview(){
- if(!previewActive)return;previewActive=false;running=false;if(gameRuntime?.player3d)threeScene.remove(gameRuntime.player3d);if(gameRuntime?.enemy3d)gameRuntime.enemy3d.forEach(m=>threeScene.remove(m));gameRuntime=null;runtimeRoot.classList.remove('active');$('gameResult').classList.remove('show');
+ if(!previewActive)return;previewActive=false;running=false;logicPreview=false;if(gameRuntime?.player3d)threeScene.remove(gameRuntime.player3d);if(gameRuntime?.enemy3d)gameRuntime.enemy3d.forEach(m=>threeScene.remove(m));gameRuntime=null;runtimeRoot.classList.remove('active');$('gameResult').classList.remove('show');
  document.body.classList.remove('preview-mode');$('previewBar').classList.remove('visible');
  $('testGameBtn').textContent='▷ Testar jogo';$('runBtn').textContent='▶ Executar';refresh();if(is3d)update3d();else draw()
 }
