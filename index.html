@@ -137,6 +137,14 @@ button.primary{background:linear-gradient(135deg,#e2c17e,#b88a43);color:#17120a}
  header button{flex:0 1 auto;min-height:32px}
  .layout{height:calc(100dvh - 48px);height:calc(100svh - 48px)}
 }
+
+/* Correção de centralização e área útil do editor 3D em orientação horizontal */
+#viewport3d{width:100%;min-width:0;overflow:hidden}
+#space3d{left:0;right:0;width:100%;min-width:0}
+#three3d{left:0;right:0;width:100%;height:100%;min-width:0}
+#three3d canvas{max-width:100%;margin:0 auto}
+@media(max-width:900px){.center{width:100%;min-width:0} .stagewrap{width:100%;min-width:0;justify-content:center} .stage{margin-inline:auto} #viewport3d{flex:1 1 auto}}
+@media(orientation:landscape) and (max-width:900px){#space3d{inset:42px 0 28px;width:100%}#three3d{inset:0;width:100%;height:100%}.stage{width:100%;max-width:100%;margin:0 auto}}
 </style><script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/"}}</script></head><body>
 <header><div class="brand">AURORA ENGINE<small>GAME CREATION STUDIO · PROTÓTIPO 0.1</small></div><div class="spacer"></div><span class="status" id="status">Projeto local</span><button id="objectsBtn">Objetos</button><button id="libraryBtn">▦ Biblioteca</button><button id="testGameBtn">▷ Testar jogo</button><button id="fpsBtn">✦ Gerar FPS</button><button id="aiBtn">Aurora AI</button><button id="undoBtn">↶ Desfazer</button><button id="saveBtn">Salvar</button><button id="installAppBtn" type="button" title="Instalar na tela inicial">＋ Instalar</button><button id="runBtn" type="button" hidden aria-hidden="true">Executar</button></header>
 <div class="layout">
@@ -207,7 +215,29 @@ async function initThree3D(){
   threeScene.add(new THREE.AxesHelper(180));
   threeReady=true;$('world3d').style.display='none';const threeStatus=$('threeStatus');if(threeStatus)threeStatus.style.display='none';
   syncThreeObjects();requestAnimationFrame(()=>{resizeThree3D();if(objects3d.length)focusScene3D()});
-  threeRenderer.domElement.addEventListener('pointerdown',e=>{if(transformControls?.dragging||transformControls?.axis)return;const rect=threeRenderer.domElement.getBoundingClientRect(),mouse=new THREE.Vector2((e.clientX-rect.left)/rect.width*2-1,-((e.clientY-rect.top)/rect.height)*2+1),ray=new THREE.Raycaster();ray.setFromCamera(mouse,threeCamera);const hits=ray.intersectObjects([...threeMeshes.values()],true);if(hits.length){let root=hits[0].object;while(root.parent&&!threeMeshes.has([...threeMeshes].find(([,m])=>m===root)?.[0]))root=root.parent;const entry=[...threeMeshes.entries()].find(([,m])=>m===root);if(entry)select3d(entry[0])}});
+  threeRenderer.domElement.addEventListener('pointerdown',e=>{if(transformControls?.dragging||transformControls?.axis)return;const rect=threeRenderer.domElement.getBoundingClientRect(),mouse=new THREE.Vector2((e.clientX-rect.left)/rect.width*2-1,-((e.clientY-rect.top)/rect.height)*2+1),ray=new THREE.Raycaster();ray.setFromCamera(mouse,threeCamera);const hits=ray.intersectObjects([...threeMeshes.values()],true);if(hits.length){let root=hits[0].object;while(root.parent&&!threeMeshes.has([...threeMeshes].find(([,m])=>m===root)?.[0]))root=root.parent;const entry=[...threeMeshes.entries()].find(([,m])=>m===root);if(entry)select3d(entry[0])}}); 
+  // Controles reais de órbita diretamente no canvas WebGL (o canvas cobre o espaço 3D).
+  let orbitPointer=null,orbitLastX=0,orbitLastY=0,pinchStart=0,pinchZoom=1;
+  const gl=threeRenderer.domElement;
+  gl.style.touchAction='none';
+  gl.addEventListener('pointerdown',e=>{
+   if(transformControls?.dragging||transformControls?.axis)return;
+   orbitPointer=e.pointerId;orbitLastX=e.clientX;orbitLastY=e.clientY;
+   try{gl.setPointerCapture(e.pointerId)}catch{}
+  });
+  gl.addEventListener('pointermove',e=>{
+   if(orbitPointer!==e.pointerId||transformControls?.dragging)return;
+   const dx=e.clientX-orbitLastX,dy=e.clientY-orbitLastY;orbitLastX=e.clientX;orbitLastY=e.clientY;
+   rotY+=dx*.42;rotX=Math.max(-82,Math.min(82,rotX+dy*.42));updateThreeCamera();
+  });
+  const endOrbit=e=>{if(orbitPointer===e.pointerId)orbitPointer=null};
+  gl.addEventListener('pointerup',endOrbit);gl.addEventListener('pointercancel',endOrbit);
+  gl.addEventListener('wheel',e=>{e.preventDefault();setZoom3d(zoom3d*(e.deltaY>0?.9:1.1))},{passive:false});
+  let pinchDistance=0,pinchBase=1;
+  gl.addEventListener('touchstart',e=>{if(e.touches.length===2){pinchDistance=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);pinchBase=zoom3d;e.preventDefault()}},{passive:false});
+  gl.addEventListener('touchmove',e=>{if(e.touches.length===2&&pinchDistance){const d=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);setZoom3d(pinchBase*d/pinchDistance);e.preventDefault()}},{passive:false});
+  gl.addEventListener('touchend',e=>{if(e.touches.length<2)pinchDistance=0});
+
   if(selected3d)select3d(selected3d);
   const animate=()=>{if(!threeReady)return;threeFrame=requestAnimationFrame(animate);threeRenderer.render(threeScene,threeCamera)};
   animate();window.addEventListener('resize',resizeThree3D);if(window.ResizeObserver){const ro=new ResizeObserver(()=>resizeThree3D());ro.observe(host);}
@@ -215,12 +245,18 @@ async function initThree3D(){
  }catch(err){$('foot').textContent='Falha ao iniciar o 3D: '+(err?.message||'erro desconhecido');const panel=$('threeStatus');if(panel){panel.className='error';panel.style.display='block';panel.textContent='Não foi possível iniciar o 3D. Verifique a conexão e recarregue a página. Detalhe: '+(err?.message||'erro desconhecido')}console.error('Aurora Three.js:',err)}
 }
 function resizeThree3D(){if(!threeRenderer||!threeCamera)return;const host=$('three3d');if(!host||!host.isConnected)return;const w=Math.max(1,host.clientWidth),h=Math.max(1,host.clientHeight);threeRenderer.setPixelRatio(Math.min(window.devicePixelRatio||1,1.5));threeRenderer.setSize(w,h,false);threeCamera.aspect=w/h;threeCamera.updateProjectionMatrix();updateThreeCamera()}
-function focusScene3D(){if(!threeCamera||!THREE)return;rotX=-24;rotY=-28;zoom3d=1;updateThreeCamera();const range=$('zoomRange3d');if(range)range.value='1'}
+function focusScene3D(){if(!threeCamera||!THREE)return;rotX=-24;rotY=-28;zoom3d=1;updateThreeCamera();const range=$('zoomRange3d');if(range)range.value='1';resizeThree3D()}
 function updateThreeCamera(){
  if(!threeCamera||!THREE)return;
+ const target=new THREE.Vector3();
+ if(threeMeshes.size){
+  const box=new THREE.Box3();
+  for(const mesh of threeMeshes.values())box.expandByObject(mesh);
+  if(!box.isEmpty())box.getCenter(target);
+ }
  const radius=390/zoom3d,phi=THREE.MathUtils.degToRad(90-rotX),theta=THREE.MathUtils.degToRad(rotY+35);
- threeCamera.position.set(radius*Math.sin(phi)*Math.sin(theta),radius*Math.cos(phi),radius*Math.sin(phi)*Math.cos(theta));
- threeCamera.lookAt(0,0,0);
+ threeCamera.position.set(target.x+radius*Math.sin(phi)*Math.sin(theta),target.y+radius*Math.cos(phi),target.z+radius*Math.sin(phi)*Math.cos(theta));
+ threeCamera.lookAt(target);
 }
 function build3dObject(o){
  const group=new THREE.Group(),mat=new THREE.MeshStandardMaterial({color:o.color||0xd7ad58,metalness:.22,roughness:.55});
