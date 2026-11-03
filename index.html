@@ -123,6 +123,8 @@ async function initThree3D(){
   threeScene.add(new THREE.AxesHelper(180));
   threeReady=true;$('world3d').style.display='none';
   resizeThree3D();syncThreeObjects();
+  threeRenderer.domElement.addEventListener('pointerdown',e=>{if(transformControls?.dragging||transformControls?.axis)return;const rect=threeRenderer.domElement.getBoundingClientRect(),mouse=new THREE.Vector2((e.clientX-rect.left)/rect.width*2-1,-((e.clientY-rect.top)/rect.height)*2+1),ray=new THREE.Raycaster();ray.setFromCamera(mouse,threeCamera);const hits=ray.intersectObjects([...threeMeshes.values()],true);if(hits.length){let root=hits[0].object;while(root.parent&&!threeMeshes.has([...threeMeshes].find(([,m])=>m===root)?.[0]))root=root.parent;const entry=[...threeMeshes.entries()].find(([,m])=>m===root);if(entry)select3d(entry[0])}});
+  if(selected3d)select3d(selected3d);
   const animate=()=>{if(!threeReady)return;threeFrame=requestAnimationFrame(animate);threeRenderer.render(threeScene,threeCamera)};
   animate();window.addEventListener('resize',resizeThree3D);
   $('foot').textContent='Cena 3D WebGL ativa · Three.js';
