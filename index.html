@@ -9,6 +9,19 @@ header{height:58px;display:flex;align-items:center;gap:9px;padding:0 13px;border
 .field{display:grid;grid-template-columns:1fr 100px;gap:8px;align-items:center;margin:8px 0;font-size:12px;color:#cbc5bb}.field input{width:100%;min-width:0;background:#09090b;border:1px solid var(--line);border-radius:6px;padding:6px;color:white}
 #aiPanel{display:flex;flex-direction:column;height:100%;min-height:330px}#aiMessages{flex:1;overflow:auto;display:flex;flex-direction:column;gap:8px;padding:8px 0}.bubble{padding:9px;border:1px solid var(--line);border-radius:9px;background:#19191f;font-size:12px;white-space:pre-wrap;overflow-wrap:anywhere}.bubble.user{border-color:#705a31;background:#211c14}.aiInput{display:flex;flex-direction:column;gap:7px}.aiInput textarea{resize:vertical;min-height:65px;background:#09090b;color:white;border:1px solid var(--line);border-radius:8px;padding:9px}.hint{font-size:10px;color:var(--muted);line-height:1.4}
 @media(max-width:900px){.layout{grid-template-columns:1fr}.panel{display:none;position:absolute;z-index:4;top:58px;bottom:0;width:min(86vw,320px);box-shadow:0 0 0 100vmax #0009}.panel.open{display:block}.right{right:0}.stagewrap{padding:6px}.stage{width:100%;aspect-ratio:16/10}.status{display:none}}
+.layout.hide-left{grid-template-columns:0 minmax(0,1fr) 285px}
+.layout.hide-right{grid-template-columns:205px minmax(0,1fr) 0}
+.layout.hide-left.hide-right{grid-template-columns:0 minmax(0,1fr) 0}
+.layout.hide-left .left,.layout.hide-right .right{display:none!important}
+.panel-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.panel-head h3{margin:0}
+.back-panel{font-size:11px;padding:6px 9px;color:var(--gold2);border-color:#6e5933;white-space:nowrap}
+@media(max-width:900px){
+ .layout,.layout.hide-left,.layout.hide-right,.layout.hide-left.hide-right{grid-template-columns:minmax(0,1fr)}
+ .layout.hide-left .left,.layout.hide-right .right{display:none!important}
+ .panel.open{display:block!important}
+ .back-panel{display:inline-flex}
+}
 
 .ai-title{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}
 .ai-title h3{margin:0}
@@ -26,9 +39,9 @@ header{height:58px;display:flex;align-items:center;gap:9px;padding:0 13px;border
 </style></head><body>
 <header><div class="brand">AURORA ENGINE<small>GAME CREATION STUDIO · PROTÓTIPO 0.1</small></div><div class="spacer"></div><span class="status" id="status">Projeto local</span><button id="objectsBtn">Objetos</button><button id="aiBtn">Aurora AI</button><button id="undoBtn">↶ Desfazer</button><button id="saveBtn">Salvar</button><button class="primary" id="runBtn">▶ Executar</button></header>
 <div class="layout">
-<aside class="panel left" id="objectsPanel"><div class="sect"><h3>Criar objeto</h3><div class="tools"><button data-add="rect">▰ Retângulo</button><button data-add="circle">● Círculo</button><button data-add="text">T Texto</button><button data-add="star">✦ Estrela</button></div></div><div class="sect"><h3>Hierarquia</h3><div class="tree" id="tree"></div></div><div class="sect"><h3>Cena</h3><button id="clearScene">Nova cena vazia</button></div></aside>
+<aside class="panel left" id="objectsPanel"><div class="sect"><div class="panel-head"><h3>Objetos</h3><button class="back-panel" id="backObjects" type="button">← Voltar</button></div></div><div class="sect"><h3>Criar objeto</h3><div class="tools"><button data-add="rect">▰ Retângulo</button><button data-add="circle">● Círculo</button><button data-add="text">T Texto</button><button data-add="star">✦ Estrela</button></div></div><div class="sect"><h3>Hierarquia</h3><div class="tree" id="tree"></div></div><div class="sect"><h3>Cena</h3><button id="clearScene">Nova cena vazia</button></div></aside>
 <main class="center"><nav class="toolbar"><button class="active">Editor 2D</button><button id="mode3d">Modo 3D (em construção)</button><button id="gridBtn" class="active">Grade</button><button id="exportBtn">Exportar projeto</button><button id="importBtn">Importar projeto</button><input id="file" type="file" accept=".json" hidden></nav><div class="stagewrap"><div class="stage"><canvas id="canvas" width="1280" height="720"></canvas></div></div><div class="foot" id="foot">Cena principal · 1280 × 720 · 0 objetos</div></main>
-<aside class="panel right open" id="rightPanel"><div class="sect"><div class="panel-head"><h3>Inspetor</h3><button id="minimizeAI" type="button" aria-label="Minimizar painel lateral" title="Minimizar painel">−</button></div><div id="inspector" class="hint">Selecione um objeto para editar.</div></div><div class="sect"><div class="ai-title"><h3>Assistente Aurora AI</h3></div><div id="aiPanel"><div class="hint">A Aurora AI pode analisar a cena e propor alterações. Quando enviar comandos estruturados, ela poderá criar, editar e excluir objetos dentro deste projeto. Use Desfazer para reverter.</div><div class="field"><label>Endpoint da IA</label><input id="aiEndpoint" placeholder="https://seu-worker.workers.dev"></div><div id="aiMessages"><div class="bubble">Olá! Sou a Aurora AI. Posso analisar o resumo desta cena e ajudar a planejar alterações. A conexão precisa de um endpoint configurado.</div></div><div class="aiInput"><textarea id="aiPrompt" placeholder="Ex.: explique como melhorar esta cena..."></textarea><button class="primary" id="sendAI">Enviar para Aurora AI</button><div class="hint">A ponte envia o pedido e o contexto do projeto. Chaves secretas ficam no backend, nunca no navegador.</div></div></div></div></aside>
+<aside class="panel right open" id="rightPanel"><div class="sect"><div class="panel-head"><h3>Inspetor</h3><div style="display:flex;gap:6px"><button class="back-panel" id="backRight" type="button">← Voltar</button><button id="minimizeAI" type="button" aria-label="Minimizar painel lateral" title="Minimizar painel">−</button></div></div><div id="inspector" class="hint">Selecione um objeto para editar.</div></div><div class="sect"><div class="ai-title"><h3>Assistente Aurora AI</h3></div><div id="aiPanel"><div class="hint">A Aurora AI pode analisar a cena e propor alterações. Quando enviar comandos estruturados, ela poderá criar, editar e excluir objetos dentro deste projeto. Use Desfazer para reverter.</div><div class="field"><label>Endpoint da IA</label><input id="aiEndpoint" placeholder="https://seu-worker.workers.dev"></div><div id="aiMessages"><div class="bubble">Olá! Sou a Aurora AI. Posso analisar o resumo desta cena e ajudar a planejar alterações. A conexão precisa de um endpoint configurado.</div></div><div class="aiInput"><textarea id="aiPrompt" placeholder="Ex.: explique como melhorar esta cena..."></textarea><button class="primary" id="sendAI">Enviar para Aurora AI</button><div class="hint">A ponte envia o pedido e o contexto do projeto. Chaves secretas ficam no backend, nunca no navegador.</div></div></div></div></aside>
 </div>
 <button id="aiRestore" type="button" aria-label="Expandir painel lateral" title="Expandir painel">＋</button>
 <script type="module">
@@ -71,14 +84,20 @@ $('exportBtn').onclick=()=>{let blob=new Blob([JSON.stringify(projectSnapshot(),
 $('importBtn').onclick=()=>$('file').click();$('file').onchange=async e=>{try{let d=JSON.parse(await e.target.files[0].text());objects=d.objects||[];selected=null;refresh();draw()}catch{alert('Arquivo de projeto inválido')}};
 $('clearScene').onclick=()=>{if(confirm('Criar uma cena vazia?')){rememberUndo();objects=[];selected=null;refresh();draw()}};$('mode3d').onclick=()=>alert('O módulo 3D será adicionado na próxima etapa. A arquitetura já separa o modo do editor.');
 const layout=document.querySelector('.layout');
-function setAIVisible(visible){
- if(visible){layout.classList.remove('ai-collapsed');$('rightPanel').classList.add('open');$('aiRestore').classList.remove('visible');}
- else{layout.classList.add('ai-collapsed');$('rightPanel').classList.remove('open');$('aiRestore').classList.add('visible');}
+function closePanel(which){
+ if(which==='left'){layout.classList.add('hide-left');$('objectsPanel').classList.remove('open');}
+ if(which==='right'){layout.classList.add('hide-right');$('rightPanel').classList.remove('open');layout.classList.add('ai-collapsed');$('aiRestore').classList.add('visible');}
 }
-$('minimizeAI').onclick=()=>setAIVisible(false);
-$('aiRestore').onclick=()=>setAIVisible(true);
-$('objectsBtn').onclick=()=>{$('objectsPanel').classList.toggle('open');$('rightPanel').classList.remove('open')};
-$('aiBtn').onclick=()=>{setAIVisible(true);$('objectsPanel').classList.remove('open')};
+function openPanel(which){
+ if(which==='left'){layout.classList.remove('hide-left');$('objectsPanel').classList.add('open');$('rightPanel').classList.remove('open');}
+ if(which==='right'){layout.classList.remove('hide-right','ai-collapsed');$('rightPanel').classList.add('open');$('objectsPanel').classList.remove('open');$('aiRestore').classList.remove('visible');}
+}
+$('backObjects').onclick=()=>closePanel('left');
+$('backRight').onclick=()=>closePanel('right');
+$('minimizeAI').onclick=()=>closePanel('right');
+$('aiRestore').onclick=()=>openPanel('right');
+$('objectsBtn').onclick=()=>{if(!layout.classList.contains('hide-left')&&$('objectsPanel').classList.contains('open'))closePanel('left');else openPanel('left')};
+$('aiBtn').onclick=()=>{if(!layout.classList.contains('hide-right')&&$('rightPanel').classList.contains('open'))closePanel('right');else openPanel('right')};
 $('sendAI').onclick=async()=>{let prompt=$('aiPrompt').value.trim();if(!prompt)return; $('aiPrompt').value='';try{await ai.ask(prompt)}catch(e){ai.showError(e.message)}};
 window.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z'){e.preventDefault();undo()}if(e.key==='Delete'&&selected){rememberUndo();objects=objects.filter(o=>o.id!==selected);selected=null;refresh();draw()}});
 const saved=localStorage.getItem('aurora-project');if(saved){try{objects=JSON.parse(saved).objects||[]}catch{}}if(!objects.length)add('text');refresh();draw();
