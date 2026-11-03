@@ -384,19 +384,25 @@ document.querySelector('.stage').appendChild(runtimeRoot);
 const rc=$('runtimeCanvas'),rctx=rc.getContext('2d');
 const gameKeys={};
 function beginRuntime(){
- gameRuntime={x:150,y:520,vx:0,vy:0,w:34,h:54,onGround:false,hp:100,score:0,level:1,kills:0,goal:3,enemies:[],platforms:[],last:0,finished:false};
+ gameRuntime={x:150,y:520,z:0,vx:0,vy:0,vz:0,w:34,h:54,onGround:false,hp:100,score:0,level:1,kills:0,goal:3,enemies:[],platforms:[],last:0,finished:false,player3d:null,enemy3d:[]};
  const scaleX=1280/Math.max(1,1280),scaleY=720/Math.max(1,720);
  if(!is3d){
   gameRuntime.platforms=objects.filter(o=>o.type==='platform'||o.type==='rect'||o.type==='collision').map(o=>({x:o.x,y:o.y,w:o.w||100,h:o.h||30}));
   if(!gameRuntime.platforms.some(p=>p.y>600))gameRuntime.platforms.push({x:0,y:670,w:1280,h:50});
  }else{
   gameRuntime.platforms=[{x:0,y:670,w:1280,h:50}];
+  const g=gameRuntime;
+  g.player3d=new THREE.Mesh(new THREE.CapsuleGeometry(.45,.9,4,8),makeMat(0xd7ad58));
+  g.player3d.position.set(0,1,0);threeScene.add(g.player3d);
+  g.enemy3d=[];
+  for(let n=0;n<g.goal;n++){const m=new THREE.Mesh(new THREE.BoxGeometry(.9,1.8,.9),makeMat(0xa64b58));m.position.set((n-(g.goal-1)/2)*3,0.9,-7);threeScene.add(m);g.enemy3d.push(m)}
+  threeCamera.position.set(0,5,10);threeCamera.lookAt(0,1,0);
  }
  spawnRuntimeEnemies();runtimeRoot.classList.add('active');$('gameResult').classList.remove('show');$('gameMessage').textContent='Use WASD ou as setas para mover. Espaço para pular. AÇÃO para atacar.';
  updateRuntimeStats();
 }
 function spawnRuntimeEnemies(){
- const g=gameRuntime;g.enemies=[];
+ const g=gameRuntime;g.enemies=[];if(is3d)return;
  for(let i=0;i<g.goal;i++)g.enemies.push({x:550+i*190,y:615,hp:2,alive:true,dir:-1});
 }
 function updateRuntimeStats(){
@@ -405,9 +411,35 @@ function updateRuntimeStats(){
  $('gameLevel').textContent='Fase '+g.level;
  $('gameScore').textContent='Pontos '+g.score+' · '+g.kills+'/'+g.goal;
 }
+
+function stepRuntime3d(g,dt){
+ if(!g.player3d)return;
+ const left=gameKeys.a||gameKeys.arrowleft,right=gameKeys.d||gameKeys.arrowright,forward=gameKeys.w||gameKeys.arrowup,back=gameKeys.s||gameKeys.arrowdown;
+ g.player3d.position.x+=((right?1:0)-(left?1:0))*5*dt;
+ g.player3d.position.z+=((back?1:0)-(forward?1:0))*5*dt;
+ g.vy-=12*dt;g.player3d.position.y+=g.vy*dt;
+ if(g.player3d.position.y<1){g.player3d.position.y=1;g.vy=0;g.onGround=true}
+ // Colisão simples por caixas delimitadoras com os objetos sólidos da cena.
+ for(const ob of objects3d){const mesh=threeObjects?.get?.(ob.id);if(!mesh||ob.kind==='light'||ob.kind==='camera')continue;
+  const dx=g.player3d.position.x-mesh.position.x,dz=g.player3d.position.z-mesh.position.z;
+  const rx=Math.max(.7,(ob.sx||1)*.65),rz=Math.max(.7,(ob.sz||1)*.65);
+  if(Math.abs(dx)<rx+.45&&Math.abs(dz)<rz+.45&&g.player3d.position.y<mesh.position.y+(ob.sy||1)+1){
+   const len=Math.hypot(dx,dz)||1;g.player3d.position.x+=dx/len*.08;g.player3d.position.z+=dz/len*.08;
+  }
+ }
+ for(let i=0;i<g.enemy3d.length;i++){const e=g.enemy3d[i];if(!e.visible)continue;const dx=g.player3d.position.x-e.position.x,dz=g.player3d.position.z-e.position.z,dist=Math.hypot(dx,dz);
+  if(dist>1.2){e.position.x+=dx/dist*1.3*dt;e.position.z+=dz/dist*1.3*dt}
+  if(dist<1.25){e.userData.cool=(e.userData.cool||0)+dt;if(e.userData.cool>1.4){g.hp-=7;e.userData.cool=0;if(g.hp<=0)finishRuntime(false)}}
+ }
+ threeCamera.position.lerp(new THREE.Vector3(g.player3d.position.x, g.player3d.position.y+4.5, g.player3d.position.z+8),Math.min(1,dt*4));
+ threeCamera.lookAt(g.player3d.position.x,g.player3d.position.y,g.player3d.position.z);
+ updateRuntimeStats();
+}
+
 function runtimeAttack(){
  const g=gameRuntime;if(!g||g.finished)return;
- const e=g.enemies.find(v=>v.alive&&Math.abs(v.x-(g.x+g.w/2))<115&&Math.abs(v.y-g.y)<100);
+ const e=is3d?null:g.enemies.find(v=>v.alive&&Math.abs(v.x-(g.x+g.w/2))<115&&Math.abs(v.y-g.y)<100);
+ if(is3d&&g.enemy3d){const target=g.enemy3d.find(m=>m.visible&&m.position.distanceTo(g.player3d.position)<3.2);if(target){target.visible=false;g.kills++;g.score+=100;if(g.kills>=g.goal)finishRuntime(true)}}
  if(e){e.hp--;if(e.hp<=0){e.alive=false;g.kills++;g.score+=100;$('gameMessage').textContent='Alvo superado!';if(g.kills>=g.goal)finishRuntime(true)}}
  else $('gameMessage').textContent='Aproxime-se de um inimigo para acertar a ação.';
  updateRuntimeStats();
@@ -419,8 +451,9 @@ function finishRuntime(win){
  $('gameNext').style.display=win?'inline-block':'none';$('gameResult').classList.add('show');
 }
 function runtimeStep(t){
- requestAnimationFrame(runtimeStep);if(!previewActive||!gameRuntime||is3d)return;
+ requestAnimationFrame(runtimeStep);if(!previewActive||!gameRuntime)return;
  const g=gameRuntime,dt=Math.min(.033,(t-(g.last||t))/1000);g.last=t;if(g.finished)return;
+ if(is3d){stepRuntime3d(g,dt);return}
  const left=gameKeys.a||gameKeys.arrowleft,right=gameKeys.d||gameKeys.arrowright;
  g.vx=((right?1:0)-(left?1:0))*260;g.x=Math.max(0,Math.min(1240-g.w,g.x+g.vx*dt));
  if((gameKeys[' ']||gameKeys.w||gameKeys.arrowup)&&g.onGround){g.vy=-560;g.onGround=false}
@@ -438,7 +471,9 @@ function drawRuntime2d(){
  for(const e of g.enemies){if(!e.alive)continue;c.fillStyle='#a64b58';c.fillRect(e.x,e.y,34,48);c.fillStyle='#f2c7b5';c.fillRect(e.x+8,e.y+8,18,12);c.fillStyle='#e9c46a';c.fillRect(e.x,e.y-8,34,4)}
 }
 function nextRuntimeLevel(){
- const g=gameRuntime;if(!g)return;g.level++;g.goal+=2;g.kills=0;g.hp=Math.min(100,g.hp+20);g.x=120;g.y=520;g.vy=0;g.finished=false;spawnRuntimeEnemies();$('gameResult').classList.remove('show');$('gameMessage').textContent='Nova fase: '+g.level+'. Elimine '+g.goal+' inimigos.';updateRuntimeStats();
+ const g=gameRuntime;if(!g)return;g.level++;g.goal+=2;g.kills=0;g.hp=Math.min(100,g.hp+20);g.x=120;g.y=520;g.vy=0;g.finished=false;
+ if(is3d){for(const m of g.enemy3d||[])threeScene.remove(m);g.enemy3d=[];for(let n=0;n<g.goal;n++){const m=new THREE.Mesh(new THREE.BoxGeometry(.9,1.8,.9),makeMat(0xa64b58));m.position.set((n-(g.goal-1)/2)*3,0.9,-7);threeScene.add(m);g.enemy3d.push(m)}}
+ spawnRuntimeEnemies();$('gameResult').classList.remove('show');$('gameMessage').textContent='Nova fase: '+g.level+'. Elimine '+g.goal+' inimigos.';updateRuntimeStats();
 }
 function startGamePreview(){
  if(fpsState.active){$('fpsObjective').textContent='Saia da partida atual antes de testar o projeto.';return}
@@ -450,7 +485,7 @@ function startGamePreview(){
  beginRuntime();requestAnimationFrame(runtimeStep);
 }
 function stopGamePreview(){
- if(!previewActive)return;previewActive=false;running=false;gameRuntime=null;runtimeRoot.classList.remove('active');$('gameResult').classList.remove('show');
+ if(!previewActive)return;previewActive=false;running=false;if(gameRuntime?.player3d)threeScene.remove(gameRuntime.player3d);if(gameRuntime?.enemy3d)gameRuntime.enemy3d.forEach(m=>threeScene.remove(m));gameRuntime=null;runtimeRoot.classList.remove('active');$('gameResult').classList.remove('show');
  document.body.classList.remove('preview-mode');$('previewBar').classList.remove('visible');
  $('testGameBtn').textContent='▷ Testar jogo';$('runBtn').textContent='▶ Executar';refresh();if(is3d)update3d();else draw()
 }
