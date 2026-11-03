@@ -420,7 +420,7 @@ function stepRuntime3d(g,dt){
  g.vy-=12*dt;g.player3d.position.y+=g.vy*dt;
  if(g.player3d.position.y<1){g.player3d.position.y=1;g.vy=0;g.onGround=true}
  // Colisão simples por caixas delimitadoras com os objetos sólidos da cena.
- for(const ob of objects3d){const mesh=threeObjects?.get?.(ob.id);if(!mesh||ob.kind==='light'||ob.kind==='camera')continue;
+ for(const ob of objects3d){const mesh=threeMeshes.get(ob.id);if(!mesh||ob.kind==='light'||ob.kind==='camera')continue;
   const dx=g.player3d.position.x-mesh.position.x,dz=g.player3d.position.z-mesh.position.z;
   const rx=Math.max(.7,(ob.sx||1)*.65),rz=Math.max(.7,(ob.sz||1)*.65);
   if(Math.abs(dx)<rx+.45&&Math.abs(dz)<rz+.45&&g.player3d.position.y<mesh.position.y+(ob.sy||1)+1){
