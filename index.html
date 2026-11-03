@@ -154,6 +154,17 @@ button.primary{background:linear-gradient(135deg,#e2c17e,#b88a43);color:#17120a}
 #viewport3d #three3d{z-index:1}
 #viewport3d #three3d canvas{z-index:1}
 @media(max-width:600px){#viewport3d .view3dbar{max-height:42%;padding:7px}#viewport3d #space3d{top:auto;bottom:auto;min-height:100px}#viewport3d .view3dhint{height:32px;flex-basis:32px}}
+
+/* Barra de ferramentas 3D em faixa própria: nunca fica atrás do WebGL */
+#viewport3d{display:flex!important;flex-direction:column!important;min-height:0}
+#viewport3d .view3dbar{position:relative!important;inset:auto!important;z-index:30!important;display:flex!important;flex:0 0 auto!important;flex-wrap:wrap!important;align-items:center!important;justify-content:flex-start!important;gap:7px!important;width:100%!important;height:auto!important;max-height:38%!important;min-height:54px!important;overflow-y:auto!important;overflow-x:hidden!important;padding:9px!important;background:#111018!important;border-bottom:2px solid #8d7041!important;box-sizing:border-box!important;pointer-events:auto!important}
+#viewport3d .view3dbar span{flex:1 1 100%!important;min-width:100%!important;text-align:center!important}
+#viewport3d .view3dbar button{position:relative!important;z-index:31!important;flex:1 1 auto!important;min-width:74px!important;min-height:40px!important;pointer-events:auto!important;touch-action:manipulation!important}
+#viewport3d #space3d{position:relative!important;inset:auto!important;z-index:1!important;flex:1 1 0!important;width:100%!important;min-height:100px!important;height:auto!important}
+#viewport3d .view3dhint{position:relative!important;z-index:4!important;flex:0 0 30px!important;height:30px!important}
+#viewport3d #three3d{position:absolute!important;inset:0!important;z-index:1!important}
+#viewport3d #three3d canvas{position:absolute!important;inset:0!important;z-index:1!important;pointer-events:auto!important}
+@media(max-width:600px){#viewport3d .view3dbar{max-height:40%!important;gap:6px!important;padding:7px!important}#viewport3d .view3dbar button{min-width:calc(33.333% - 8px)!important;font-size:11px!important}}
 </style><script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/"}}</script></head><body>
 <header><div class="brand">AURORA ENGINE<small>GAME CREATION STUDIO · PROTÓTIPO 0.1</small></div><div class="spacer"></div><span class="status" id="status">Projeto local</span><button id="objectsBtn">Objetos</button><button id="libraryBtn">▦ Biblioteca</button><button id="testGameBtn">▷ Testar jogo</button><button id="fpsBtn">✦ Gerar FPS</button><button id="aiBtn">Aurora AI</button><button id="undoBtn">↶ Desfazer</button><button id="saveBtn">Salvar</button><button id="installAppBtn" type="button" title="Instalar na tela inicial">＋ Instalar</button><button id="runBtn" type="button" hidden aria-hidden="true">Executar</button></header>
 <div class="layout">
@@ -657,14 +668,18 @@ function nextRuntimeLevel(){
  spawnRuntimeEnemies();$('gameResult').classList.remove('show');$('gameMessage').textContent='Nova fase: '+g.level+'. Elimine '+g.goal+' inimigos.';updateRuntimeStats();
 }
 function startGamePreview(){
- if(fpsState.active){$('fpsObjective').textContent='Saia da partida atual antes de testar o projeto.';return}
- // O Play abre a cena construída pelo usuário. Não injeta personagem, inimigos,
- // plataformas ou fases de demonstração automaticamente.
- previewActive=true;running=true;gameRuntime=null;document.body.classList.add('preview-mode');$('previewBar').classList.add('visible');
- $('previewInfo').textContent=is3d?'Executando sua cena 3D':'Executando sua cena 2D';
- $('testGameBtn').textContent='■ Jogo em execução';$('runBtn').textContent='■ Parar';
- if(is3d){if(!threeReady){initThree3D().then(()=>{resizeThree3D();syncThreeObjects()});}else{syncThreeObjects();resizeThree3D()} }
- else{selected=null;draw()}
+ if(fpsState.active){$('fpsObjective').textContent='Saia da partida FPS antes de testar seu projeto.';return}
+ // Teste fiel: exibe exclusivamente os objetos e a lógica que o usuário montou.
+ // Não chama beginRuntime() nem cria jogador, inimigos, fases ou cenário de demonstração.
+ previewActive=true;running=true;gameRuntime=null;
+ document.body.classList.add('preview-mode');$('previewBar').classList.add('visible');
+ const count=is3d?objects3d.length:objects.length;
+ $('previewInfo').textContent=(is3d?'Projeto 3D':'Projeto 2D')+' · '+count+' objetos da sua cena';
+ $('testGameBtn').textContent='■ Parar teste';$('runBtn').textContent='■ Parar';
+ if(is3d){
+  const ready=()=>{resizeThree3D();syncThreeObjects();if(objects3d.length){const box=new THREE.Box3();for(const mesh of threeMeshes.values())box.expandByObject(mesh);if(!box.isEmpty()){const center=box.getCenter(new THREE.Vector3());threeCamera.lookAt(center)}}};
+  if(!threeReady)initThree3D().then(ready);else ready();
+ }else{selected=null;draw()}
 }
 function stopGamePreview(){
  if(!previewActive)return;previewActive=false;running=false;if(gameRuntime?.player3d)threeScene.remove(gameRuntime.player3d);if(gameRuntime?.enemy3d)gameRuntime.enemy3d.forEach(m=>threeScene.remove(m));gameRuntime=null;runtimeRoot.classList.remove('active');$('gameResult').classList.remove('show');
