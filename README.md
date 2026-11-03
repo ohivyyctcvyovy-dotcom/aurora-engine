@@ -1,28 +1,27 @@
 # Aurora Engine
 
-Motor de criação de jogos 2D e 3D, com editor visual mobile-first e **IA integrada desde o início**.
+Editor de criação de jogos com interface mobile-first, visual preto e dourado e Aurora AI integrada.
 
-## Protótipo inicial
-- Editor 2D em Canvas: criar, selecionar e mover formas e textos.
-- Hierarquia e inspetor de propriedades.
-- Executar/parar prévia.
-- Salvar no navegador e importar/exportar projeto JSON.
+## Abrir o editor
+O arquivo principal é `index.html`. Para ter um endereço de site, ative **Settings → Pages → Deploy from a branch → main → /(root)** no GitHub. Depois o GitHub mostrará a URL publicada na seção Pages. A publicação pode levar alguns minutos.
+
+## O que já funciona nesta versão
+- Editor 2D em Canvas com retângulo, círculo, estrela e texto.
+- Seleção, movimentação por toque/mouse e inspetor de propriedades.
+- Hierarquia, grade, exclusão e criação de cena.
+- Desfazer com o botão ou Ctrl+Z.
+- Salvar localmente, importar e exportar JSON.
 - Painel Aurora AI dentro do editor.
-- Camada AI Bridge com contexto do projeto, ferramentas e endpoint configurável.
-- Backend Worker de exemplo para conectar um provedor de IA sem expor a chave no navegador.
+- AI Bridge envia o contexto da cena ao Worker.
+- A IA pode criar, editar e excluir objetos por ações limitadas e validadas no próprio editor.
 
-## Abrir
-Publique a raiz do repositório com GitHub Pages e abra `index.html`.
+## Ativar a IA
+1. Publique o Worker da pasta `worker` no Cloudflare.
+2. Configure o segredo `OPENROUTER_API_KEY` no Worker e, se necessário, `OPENROUTER_MODEL`.
+3. Copie a URL HTTPS do Worker.
+4. Abra o editor, toque em **Aurora AI**, cole a URL no campo **Endpoint da IA** e envie um pedido como: “Crie um círculo azul e um título dourado no centro”.
 
-## Conectar a IA
-Configure um endpoint HTTPS compatível com o contrato em `ai/bridge.js`. Para desenvolvimento com OpenRouter, use o Worker em `worker/src/index.js` e configure o segredo `OPENROUTER_API_KEY` no ambiente do Worker. Nunca coloque chaves secretas no HTML ou no repositório.
+A chave fica no Worker, nunca no HTML. O provedor/modelo pode ter limites ou custos; confira as condições antes de usar. O modo IA não é ativado até o Worker estar publicado e configurado.
 
-## Acesso da IA
-A ponte permite ler o resumo do projeto e solicitar operações de edição/teste. As operações são limitadas ao workspace do motor, registradas e podem ser desfeitas. Acesso total ao celular, contas externas ou ações destrutivas sem recuperação não fazem parte do escopo.
-
-## Próximas etapas
-1. Completar o sistema de cenas e ferramentas 2D.
-2. Integrar renderização 3D.
-3. Adicionar execução de scripts em ambiente isolado e testes automatizados.
-4. Implementar exportação web e, depois, empacotamento Android/PC.
-5. Evoluir o AI Bridge para operações de editor com histórico e desfazer.
+## Limites atuais
+Esta é uma versão inicial do editor 2D. O modo 3D, execução real de jogos, scripts, exportação Android/PC e ferramentas avançadas ainda precisam ser construídos. A IA só pode executar as três ações de objetos descritas acima; não tem acesso ao celular nem a contas externas.
