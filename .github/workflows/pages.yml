@@ -26,15 +26,17 @@ jobs:
 
       - name: Configurar GitHub Pages
         uses: actions/configure-pages@v5
-        with:
-          enablement: true
 
       - name: Preparar arquivos do site
+        run: |
+          mkdir -p _site
+          cp index.html _site/
+          cp -R ai _site/
+
+      - name: Enviar arquivos para publicação
         uses: actions/upload-pages-artifact@v3
         with:
-          path: |
-            index.html
-            ai/
+          path: _site
 
       - name: Publicar site
         id: deployment
