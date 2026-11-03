@@ -362,22 +362,107 @@ function useLibraryAsset(id){
 $('libraryBtn').onclick=()=>{$('assetLibrary').classList.add('open');renderAssetLibrary()};
 $('assetClose').onclick=()=>$('assetLibrary').classList.remove('open');
 
-let previewActive=false;
+
+let previewActive=false,gameRuntime=null;
+const runtimeStyle=document.createElement('style');
+runtimeStyle.textContent=`
+#gameRuntime{position:absolute;inset:0;z-index:92;display:none;pointer-events:none;font:13px system-ui;color:#fff}
+#gameRuntime.active{display:block}#gameRuntime canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+#gameStats{position:absolute;top:12px;left:12px;padding:9px 12px;border:1px solid #d7ad58;background:#09090bdc;border-radius:9px;display:flex;gap:14px;flex-wrap:wrap}
+#gameMessage{position:absolute;top:64px;left:50%;transform:translateX(-50%);padding:9px 14px;background:#09090be8;border:1px solid #d7ad58;border-radius:9px;text-align:center;max-width:90%}
+#gameTouch{position:absolute;bottom:16px;left:12px;right:12px;display:flex;justify-content:space-between;align-items:end;pointer-events:auto}
+#gameTouch .pad{display:grid;grid-template-columns:repeat(3,48px);grid-template-rows:repeat(2,44px);gap:4px}
+#gameTouch button{background:#17151ddd;border:1px solid #d7ad58;min-width:48px;min-height:44px;touch-action:none}
+#gameTouch .actions{display:flex;gap:7px;align-items:end}#gameTouch button.fire{min-width:66px;min-height:60px}
+#gameResult{position:absolute;inset:0;display:none;place-items:center;background:#050509d9;pointer-events:auto}
+#gameResult.show{display:grid}#gameResult>div{background:#15141a;border:1px solid #d7ad58;border-radius:14px;padding:24px;text-align:center;max-width:320px}
+`;
+document.head.appendChild(runtimeStyle);
+const runtimeRoot=document.createElement('div');runtimeRoot.id='gameRuntime';
+runtimeRoot.innerHTML='<canvas id="runtimeCanvas" width="1280" height="720"></canvas><div id="gameStats"><b id="gameHealth">♥ 100</b><span id="gameLevel">Fase 1</span><span id="gameScore">Pontos 0</span></div><div id="gameMessage">Elimine os inimigos e alcance o objetivo.</div><div id="gameTouch"><div class="pad"><span></span><button data-key="w">▲</button><span></span><button data-key="a">◀</button><button data-key="s">▼</button><button data-key="d">▶</button></div><div class="actions"><button data-action="jump">PULAR</button><button data-action="attack" class="fire">AÇÃO</button></div></div><div id="gameResult"><div><h2 id="gameResultTitle">Fase concluída!</h2><p id="gameResultText"></p><button id="gameNext" class="primary">Próxima fase</button> <button id="gameRestart">Reiniciar</button></div></div>';
+document.querySelector('.stage').appendChild(runtimeRoot);
+const rc=$('runtimeCanvas'),rctx=rc.getContext('2d');
+const gameKeys={};
+function beginRuntime(){
+ gameRuntime={x:150,y:520,vx:0,vy:0,w:34,h:54,onGround:false,hp:100,score:0,level:1,kills:0,goal:3,enemies:[],platforms:[],last:0,finished:false};
+ const scaleX=1280/Math.max(1,1280),scaleY=720/Math.max(1,720);
+ if(!is3d){
+  gameRuntime.platforms=objects.filter(o=>o.type==='platform'||o.type==='rect'||o.type==='collision').map(o=>({x:o.x,y:o.y,w:o.w||100,h:o.h||30}));
+  if(!gameRuntime.platforms.some(p=>p.y>600))gameRuntime.platforms.push({x:0,y:670,w:1280,h:50});
+ }else{
+  gameRuntime.platforms=[{x:0,y:670,w:1280,h:50}];
+ }
+ spawnRuntimeEnemies();runtimeRoot.classList.add('active');$('gameResult').classList.remove('show');$('gameMessage').textContent='Use WASD ou as setas para mover. Espaço para pular. AÇÃO para atacar.';
+ updateRuntimeStats();
+}
+function spawnRuntimeEnemies(){
+ const g=gameRuntime;g.enemies=[];
+ for(let i=0;i<g.goal;i++)g.enemies.push({x:550+i*190,y:615,hp:2,alive:true,dir:-1});
+}
+function updateRuntimeStats(){
+ const g=gameRuntime;if(!g)return;
+ $('gameHealth').textContent='♥ '+Math.max(0,Math.ceil(g.hp));
+ $('gameLevel').textContent='Fase '+g.level;
+ $('gameScore').textContent='Pontos '+g.score+' · '+g.kills+'/'+g.goal;
+}
+function runtimeAttack(){
+ const g=gameRuntime;if(!g||g.finished)return;
+ const e=g.enemies.find(v=>v.alive&&Math.abs(v.x-(g.x+g.w/2))<115&&Math.abs(v.y-g.y)<100);
+ if(e){e.hp--;if(e.hp<=0){e.alive=false;g.kills++;g.score+=100;$('gameMessage').textContent='Alvo superado!';if(g.kills>=g.goal)finishRuntime(true)}}
+ else $('gameMessage').textContent='Aproxime-se de um inimigo para acertar a ação.';
+ updateRuntimeStats();
+}
+function finishRuntime(win){
+ const g=gameRuntime;if(g.finished)return;g.finished=true;
+ $('gameResultTitle').textContent=win?'Fase concluída!':'Fim de jogo';
+ $('gameResultText').textContent=win?'Você completou a fase '+g.level+'. Pontuação: '+g.score+'.':'Sua energia acabou. Tente novamente.';
+ $('gameNext').style.display=win?'inline-block':'none';$('gameResult').classList.add('show');
+}
+function runtimeStep(t){
+ requestAnimationFrame(runtimeStep);if(!previewActive||!gameRuntime||is3d)return;
+ const g=gameRuntime,dt=Math.min(.033,(t-(g.last||t))/1000);g.last=t;if(g.finished)return;
+ const left=gameKeys.a||gameKeys.arrowleft,right=gameKeys.d||gameKeys.arrowright;
+ g.vx=((right?1:0)-(left?1:0))*260;g.x=Math.max(0,Math.min(1240-g.w,g.x+g.vx*dt));
+ if((gameKeys[' ']||gameKeys.w||gameKeys.arrowup)&&g.onGround){g.vy=-560;g.onGround=false}
+ g.vy+=1450*dt;const oldY=g.y;g.y+=g.vy*dt;g.onGround=false;
+ for(const p of g.platforms){if(g.vy>=0&&oldY+g.h<=p.y+8&&g.y+g.h>=p.y&&g.x+g.w>p.x&&g.x<p.x+p.w){g.y=p.y-g.h;g.vy=0;g.onGround=true}}
+ for(const e of g.enemies){if(!e.alive)continue;e.x+=Math.sign(g.x-e.x)*Math.min(38*dt,Math.abs(g.x-e.x));if(Math.abs(e.x-g.x)<35&&Math.abs(e.y-g.y)<75){e.cool=(e.cool||0)+dt;if(e.cool>1.2){g.hp-=8;e.cool=0;if(g.hp<=0)finishRuntime(false)}}}
+ drawRuntime2d();updateRuntimeStats();
+}
+function drawRuntime2d(){
+ const g=gameRuntime,c=rctx;c.clearRect(0,0,1280,720);
+ c.fillStyle='#101321';c.fillRect(0,0,1280,720);
+ for(let i=0;i<90;i++){c.fillStyle=i%3?'#ffffff55':'#d7ad5888';c.fillRect((i*137)%1280,(i*71)%650,2,2)}
+ for(const p of g.platforms){c.fillStyle='#756044';c.fillRect(p.x,p.y,p.w,p.h);c.fillStyle='#d7ad58';c.fillRect(p.x,p.y,p.w,4)}
+ c.fillStyle='#d7ad58';c.fillRect(g.x,g.y,g.w,g.h);c.fillStyle='#17131a';c.fillRect(g.x+8,g.y+12,18,8);c.fillStyle='#fff1c9';c.fillRect(g.x+18,g.y+14,5,5);
+ for(const e of g.enemies){if(!e.alive)continue;c.fillStyle='#a64b58';c.fillRect(e.x,e.y,34,48);c.fillStyle='#f2c7b5';c.fillRect(e.x+8,e.y+8,18,12);c.fillStyle='#e9c46a';c.fillRect(e.x,e.y-8,34,4)}
+}
+function nextRuntimeLevel(){
+ const g=gameRuntime;if(!g)return;g.level++;g.goal+=2;g.kills=0;g.hp=Math.min(100,g.hp+20);g.x=120;g.y=520;g.vy=0;g.finished=false;spawnRuntimeEnemies();$('gameResult').classList.remove('show');$('gameMessage').textContent='Nova fase: '+g.level+'. Elimine '+g.goal+' inimigos.';updateRuntimeStats();
+}
 function startGamePreview(){
- if(fpsState.active){$('fpsObjective').textContent='Saia da partida atual antes de abrir a pré-visualização.';return}
+ if(fpsState.active){$('fpsObjective').textContent='Saia da partida atual antes de testar o projeto.';return}
  previewActive=true;running=true;document.body.classList.add('preview-mode');$('previewBar').classList.add('visible');
- $('previewInfo').textContent=is3d?'Cena 3D · pré-visualização':'Cena 2D · pré-visualização';
- $('testGameBtn').textContent='■ Pré-visualizando';$('runBtn').textContent='■ Parar';
+ $('previewInfo').textContent=is3d?'Jogo 3D · controles e física':'Jogo 2D · controles e física';
+ $('testGameBtn').textContent='■ Jogo em execução';$('runBtn').textContent='■ Parar';
  if(is3d){render3dObjects();update3d();if(threeRenderer)threeRenderer.setSize($('three3d').clientWidth,$('three3d').clientHeight)}
  else{selected=null;draw()}
+ beginRuntime();requestAnimationFrame(runtimeStep);
 }
 function stopGamePreview(){
- if(!previewActive)return;previewActive=false;running=false;document.body.classList.remove('preview-mode');$('previewBar').classList.remove('visible');
+ if(!previewActive)return;previewActive=false;running=false;gameRuntime=null;runtimeRoot.classList.remove('active');$('gameResult').classList.remove('show');
+ document.body.classList.remove('preview-mode');$('previewBar').classList.remove('visible');
  $('testGameBtn').textContent='▷ Testar jogo';$('runBtn').textContent='▶ Executar';refresh();if(is3d)update3d();else draw()
 }
-$('testGameBtn').onclick=startGamePreview;
-$('stopPreview').onclick=stopGamePreview;
+document.querySelectorAll('#gameTouch [data-key]').forEach(b=>{const k=b.dataset.key;b.onpointerdown=e=>{e.preventDefault();gameKeys[k]=true};['pointerup','pointercancel','pointerleave'].forEach(ev=>b.addEventListener(ev,()=>gameKeys[k]=false))});
+document.querySelector('[data-action="jump"]').onclick=()=>{if(gameRuntime&&gameRuntime.onGround){gameRuntime.vy=-560;gameRuntime.onGround=false}};
+document.querySelector('[data-action="attack"]').onclick=runtimeAttack;
+$('gameNext').onclick=nextRuntimeLevel;$('gameRestart').onclick=beginRuntime;
+document.addEventListener('keydown',e=>{if(!previewActive)return;gameKeys[e.key.toLowerCase()]=true;if(e.key===' '){e.preventDefault()}if(e.key.toLowerCase()==='f')runtimeAttack()});
+document.addEventListener('keyup',e=>{gameKeys[e.key.toLowerCase()]=false});
+$('testGameBtn').onclick=startGamePreview;$('stopPreview').onclick=stopGamePreview;
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&previewActive)stopGamePreview()});
+
 </script>
 <div id="fpsGenerator" aria-hidden="true"><div class="fpsCard">
  <div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><h2>Gerador de jogos por descrição</h2><button id="fpsClose">Fechar ×</button></div>
