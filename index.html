@@ -299,7 +299,11 @@ function applyAIActions(actions){
    p={...p};const rawKind=String(p.kind||p.type||p.objectType||p.shape||'').toLowerCase();
    p.kind=allowed3D.includes(rawKind)?rawKind:(kindAliases[rawKind]||'');
    a.object=p;
-  }else if(!a.type&&typeAliases2D[String(a.kind||a.objectType||'').toLowerCase()]){
+  }else if(typeAliases2D[rawAction]||allowedTypes.includes(rawAction)){
+   a.type='create_object';a.object={...a,...(a.object||{}),type:typeAliases2D[rawAction]||rawAction};
+  }else if(kindAliases[rawAction]||allowed3D.includes(rawAction)){
+   a.type='create_3d_object';a.object={...a,...(a.object||{}),kind:kindAliases[rawAction]||rawAction};
+  }else if(!rawAction&&typeAliases2D[String(a.kind||a.objectType||'').toLowerCase()]){
    a.type='create_object';a.object={...a,type:typeAliases2D[String(a.kind||a.objectType).toLowerCase()]};
   }
   if(a.type==='replace_scene'){
