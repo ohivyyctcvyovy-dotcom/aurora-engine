@@ -46,10 +46,10 @@ export function createAIClient({getEndpoint,getProject,onMessage,applyActions,on
       "Ações 3D: create_3d_object com object {kind:cube|sphere|terrain|building|character|tree|camera|light,name,x,y,z,sx,sy,sz,rx,ry,rz,color}. Também update_3d_object com name e changes, delete_3d_object com name.",
       "Use coordenadas 2D entre 0 e 1280 (X) e 0 e 720 (Y). Em 3D, use posições e escalas moderadas.",
       "Crie ambientes, prédios, salas, corredores, cenários, personagens visuais, árvores, objetos de decoração, interfaces e lógica genérica. Não crie armas nem instruções de combate.",
-      "No máximo 24 ações por resposta. Não apague a cena existente, a menos que o usuário peça claramente para substituí-la.",
+      "No máximo 12 ações por resposta. Não apague a cena existente, a menos que o usuário peça claramente para substituí-la.",
       "Se o usuário pedir código JavaScript, coloque o código no campo code como texto. Nunca afirme que executou o código; ele será apenas colocado no editor para revisão.",
-      "Contexto resumido do projeto: " + JSON.stringify(project).slice(0, 1050),
-      "Pedido do usuário: " + String(prompt || "").slice(0, 900)
+      "Contexto resumido do projeto: " + JSON.stringify(project).slice(0, 600),
+      "Pedido do usuário: " + String(prompt || "").slice(0, 800)
     ].join("\n");
     onMessage("user", prompt);
     const response = await fetch(endpoint + "/chat", {
