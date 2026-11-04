@@ -75,7 +75,10 @@ export function createAIClient({getEndpoint,getProject,onMessage,applyActions,on
       if (actions.length) applied = !!applyActions?.(actions);
       if (typeof parsed.code === "string" && parsed.code.trim()) onCode?.(parsed.code);
       let message = String(parsed.reply || "Resposta recebida da Aurora.");
-      if (applied) message += "\n\nAs alterações foram aplicadas à cena. Use Desfazer se quiser voltar.";
+      const asksToBuild = /\b(crie|criar|construa|construir|monte|montar|adicione|adicionar|gere|gerar)\b/i.test(String(prompt || ""));
+      if (asksToBuild && !actions.length && !(typeof parsed.code === "string" && parsed.code.trim())) {
+        message = "A Aurora não enviou nenhuma ação executável. Portanto, não foi criado nenhum objeto na cena. Tente novamente; a IA precisa enviar ações estruturadas para o editor construir.";
+      } else if (applied) message += "\n\nAs alterações foram aplicadas à cena. Use Desfazer se quiser voltar.";
       else if (actions.length) message += "\n\nA resposta continha ações, mas nenhuma alteração válida foi aplicada.";
       if (typeof parsed.code === "string" && parsed.code.trim()) message += "\n\nO código foi colocado no Editor de Código para você revisar antes de executar.";
       onMessage("assistant", message);
