@@ -276,7 +276,7 @@ function undo(){const old=undoStack.pop();if(!old)return;const snap=JSON.parse(o
 $('undoBtn').onclick=undo;
 function applyAIActions(actions){
  if(!Array.isArray(actions)||actions.length>30)throw new Error('Lista de ações inválida ou muito grande.');
- const allowedTypes=['rect','circle','text','star','character','sprite','platform','scenario','collision','house','tree','mountain','cloud','water','road','bridge','flower','fence','building'];
+ const allowedTypes=['rect','circle','text','star','character','sprite','platform','scenario','collision','house','tree','mountain','cloud','water','road','bridge','building'];
  const allowed3D=['cube','sphere','terrain','building','character','tree','camera','light','house','castle','bridge','road','water','mountain','rock','lamp','bench','fountain','portal','forest','village','city','temple','room'];
  let changed=false,targetMode=null;
  if(actions.length)rememberUndo();
