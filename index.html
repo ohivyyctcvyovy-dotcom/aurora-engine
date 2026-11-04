@@ -712,12 +712,12 @@ function runtimeStep(t){
   if(actor){const left=gameKeys.a||gameKeys.arrowleft,right=gameKeys.d||gameKeys.arrowright,up=gameKeys.w||gameKeys.arrowup,down=gameKeys.s||gameKeys.arrowdown;
    if(is3d&&g.player3d){
     const mx=(right?1:0)-(left?1:0),mz=(down?1:0)-(up?1:0),moving=Math.hypot(mx,mz)>0;
-    if(moving){const inv=1/Math.max(1,Math.hypot(mx,mz));g.player3d.position.x+=mx*inv*5*dt;g.player3d.position.z+=mz*inv*5*dt;g.heading=Math.atan2(mx,mz);g.player3d.rotation.y=g.heading}
+    if(moving){const inv=1/Math.max(1,Math.hypot(mx,mz));g.player3d.position.x+=mx*inv*180*dt;g.player3d.position.z+=mz*inv*180*dt;g.heading=Math.atan2(mx,mz);g.player3d.rotation.y=g.heading}
     actor.x=g.player3d.position.x;actor.y=g.player3d.position.y;actor.z=g.player3d.position.z;
-    const offset=new THREE.Vector3(Math.sin(g.heading)*7,3.2,Math.cos(g.heading)*7);
+    const offset=new THREE.Vector3(Math.sin(g.heading)*260,115,Math.cos(g.heading)*260);
     const desired=g.player3d.position.clone().add(offset);
     threeCamera.position.lerp(desired,1-Math.exp(-5*dt));
-    threeCamera.lookAt(g.player3d.position.x,g.player3d.position.y+1.0,g.player3d.position.z);
+    threeCamera.lookAt(g.player3d.position.x,g.player3d.position.y+48,g.player3d.position.z);
    }
    else{actor.x=Math.max(0,Math.min(1280,actor.x+((right?1:0)-(left?1:0))*260*dt));actor.y=Math.max(0,Math.min(720,actor.y+((down?1:0)-(up?1:0))*260*dt));g.x=actor.x-(actor.w||50)/2;g.y=actor.y-(actor.h||50)/2;draw()}
   }
