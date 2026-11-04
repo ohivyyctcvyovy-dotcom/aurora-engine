@@ -870,7 +870,7 @@ function stepRuntime3d(g,dt){
  if(!g.player3d)return;
  const left=gameKeys.a||gameKeys.arrowleft,right=gameKeys.d||gameKeys.arrowright,forward=gameKeys.w||gameKeys.arrowup,back=gameKeys.s||gameKeys.arrowdown;
  const mx=(right?1:0)-(left?1:0),mz=(back?1:0)-(forward?1:0),moving=Math.hypot(mx,mz)>0;
- if(moving){const inv=1/Math.max(1,Math.hypot(mx,mz));g.player3d.position.x+=mx*inv*180*dt;g.player3d.position.z+=mz*inv*180*dt;g.heading=Math.atan2(mx,-mz);g.player3d.rotation.y=g.heading;}
+ if(moving){const inv=1/Math.max(1,Math.hypot(mx,mz));g.player3d.position.x+=mx*inv*180*dt;g.player3d.position.z+=mz*inv*180*dt;g.heading=Math.atan2(mx,mz);g.player3d.rotation.y=g.heading;}
  g.vy-=12*dt;g.player3d.position.y+=g.vy*dt;
  if(g.player3d.position.y<1){g.player3d.position.y=1;g.vy=0;g.onGround=true}
  // Colisão simples por caixas delimitadoras com os objetos sólidos da cena.
