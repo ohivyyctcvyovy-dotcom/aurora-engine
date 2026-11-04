@@ -21,7 +21,9 @@ A ponte `ai/bridge.js` usa o contrato da API Aurora:
 ### O que a IA consegue fazer no editor
 
 - Criar, editar, mover e excluir objetos 2D.
-- Montar cenas com retângulos, círculos, textos, estrelas, plataformas, áreas de colisão e personagens visuais.
+- Montar cenas 2D com formas, personagens visuais, casas, árvores, montanhas, nuvens, água, estradas, pontes e prédios procedurais.
+- Usar uma biblioteca de prefabs 3D compostos: casas, castelos, pontes, estradas, água, montanhas, rochas, postes, bancos, fontes, portais, florestas, vilas, cidades, templos e interiores.
+- Pedir à Aurora composições maiores com caminhos, profundidade, iluminação e pontos de interesse; prefabs compostos ajudam a criar locais ricos com menos ações.
 - Criar, editar e excluir objetos 3D: cubos, esferas, terrenos, prédios, personagens visuais, árvores, câmeras e luzes.
 - Analisar o resumo da cena atual para orientar as alterações.
 - Gerar JavaScript e colocá-lo no **Editor de Código** para revisão.
@@ -46,4 +48,4 @@ A API gratuita pode ter limites de uso e disponibilidade do modelo. Não há gar
 
 ## Limites atuais
 
-Esta é uma versão em evolução. A IA pode aplicar até 12 ações estruturadas por resposta. Recursos como execução completa de jogos exportáveis, multiplayer online, publicação Android/PC e sistemas avançados de jogo ainda exigem desenvolvimento adicional.
+Esta é uma versão em evolução. A IA pode aplicar até 12 ações estruturadas por resposta. Para cenas grandes, ela deve priorizar prefabs compostos e distribuí-los com posições e escalas coerentes. Recursos como execução completa de jogos exportáveis, multiplayer online, publicação Android/PC e sistemas avançados de jogo ainda exigem desenvolvimento adicional.
