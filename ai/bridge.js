@@ -41,7 +41,7 @@ export function createAIClient({getEndpoint,getProject,onMessage,applyActions,on
       "Você é Aurora AI integrada ao editor Aurora Engine. Responda em português brasileiro.",
       "Sua tarefa é ajudar a construir cenas e projetos de jogos no editor, usando ações estruturadas.",
       "Retorne SOMENTE JSON válido, sem Markdown, neste formato: {\"reply\":\"resumo curto\",\"actions\":[],\"code\":\"\"}.",
-      "Ações 2D: create_object com object {type:rect|circle|text|star|character|sprite|platform|scenario|collision|house|tree|mountain|cloud|water|road|bridge|flower|fence|building,name,x,y,w,h,color,text,fontSize,animated,collision}.",
+      "Ações 2D: create_object com object {type:rect|circle|text|star|character|sprite|platform|scenario|collision|house|tree|mountain|cloud|water|road|bridge|building,name,x,y,w,h,color,text,fontSize,animated,collision}.",
       "Também pode usar update_object com name e changes, delete_object com name, ou replace_scene com name e objects (somente se o usuário pedir para substituir a cena).",
       "Ações 3D: create_3d_object com object {kind:cube|sphere|terrain|building|character|tree|camera|light|house|castle|bridge|road|water|mountain|rock|lamp|bench|fountain|portal|forest|village|city|temple|room,name,x,y,z,sx,sy,sz,rx,ry,rz,color}. Prefira prefabs compostos como village, city, castle, temple, forest e room para criar lugares ricos com poucas ações.",
       "Use coordenadas 2D entre 0 e 1280 (X) e 0 e 720 (Y). Em 3D, use posições e escalas moderadas.",
