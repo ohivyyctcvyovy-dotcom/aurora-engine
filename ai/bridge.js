@@ -6,11 +6,11 @@ function compactProject(project) {
     mode: p.mode || "2D",
     width: p.width || 1280,
     height: p.height || 720,
-    objects: (Array.isArray(p.objects) ? p.objects : []).slice(0, 12).map(o => ({
+    objects: (Array.isArray(p.objects) ? p.objects : []).slice(0, 24).map(o => ({
       id:o.id,type:o.type,name:o.name,x:o.x,y:o.y,w:o.w,h:o.h,color:o.color,
       text:o.text,animated:!!o.animated,collision:!!o.collision
     })),
-    objects3d: (Array.isArray(p.objects3d) ? p.objects3d : []).slice(0, 10).map(o => ({
+    objects3d: (Array.isArray(p.objects3d) ? p.objects3d : []).slice(0, 20).map(o => ({
       id:o.id,kind:o.kind,name:o.name,x:o.x,y:o.y,z:o.z,
       sx:o.sx,sy:o.sy,sz:o.sz,rx:o.rx,ry:o.ry,rz:o.rz,color:o.color
     }))
@@ -42,12 +42,15 @@ export function createAIClient({getEndpoint,getProject,onMessage,applyActions,on
       "Entenda pedidos em linguagem natural como instruções de construção. Identifique modo 2D/3D pelo projeto atual, a menos que o usuário peça outro modo.",
       "Antes de gerar ações, interprete: objetivo, dimensões/unidades, quantidade de elementos, posições relativas, conexões, aparência e interações pedidas. Transforme medidas como grade 5x5 em layout regular, com espaçamento uniforme e limites claros.",
       "Planeje a cena como um conjunto coerente: alinhe objetos, mantenha escala consistente, evite sobreposições, deixe passagens livres e conecte caminhos, salas, corredores e entradas. Use coordenadas calculadas; não espalhe objetos aleatoriamente nem use posições enormes sem necessidade.",
+      "Para pedidos 2D, pense como designer de fases: organize camadas (fundo, cenário, piso/plataformas, obstáculos, objetos, personagens e textos), use 1280x720 como referência, distribua elementos com proporções e espaçamento consistentes e não coloque tudo no centro. Em mapas, use linhas e colunas regulares; em interiores, mantenha corredores e vãos livres; em paisagens, combine fundo, terreno e elementos em planos distintos.",
+      "Interprete pedidos variados, não apenas mapas: menus, telas iniciais, vilas, cidades, florestas, interiores, plataformas, fases de aventura, cenários de corrida, objetos decorativos, personagens e interfaces. Extraia cada elemento, quantidade, tamanho aproximado, estilo e posição relativa. Se o pedido for amplo, monte uma composição coerente em vez de criar apenas um objeto genérico.",
+      "No 2D, escolha tipos conforme a função visual: rect para formas/estruturas, platform para pisos, scenario para fundo, character/sprite para personagens, text para rótulos e prefabs house/tree/mountain/cloud/water/road/bridge/building quando adequados. Varie largura e altura conforme o objeto; não use o mesmo tamanho para tudo.",
       "Se o pedido descrever salas, mapa ou edifício, construa a planta de forma lógica: piso, paredes externas, divisórias, vãos de passagem e portas representadas por objetos. Se pedir uma quantidade exata, respeite-a. Não diga que uma porta ou comportamento é funcional se o editor só criar a representação visual.",
       "Seja fiel ao pedido e ao contexto da cena. Preserve os objetos existentes; acrescente ou atualize apenas o necessário. Só substitua ou apague a cena quando isso for solicitado explicitamente. Se faltar um detalhe não essencial, escolha uma solução sensata e informe brevemente a escolha.",
       "Use as ações estruturadas suportadas pelo editor. Retorne SOMENTE JSON válido, sem Markdown: {\"reply\":\"resumo curto\",\"actions\":[],\"code\":\"\"}. Não invente tipos ou campos que não estejam listados.",
       "Ações 2D: create_object com object {type:rect|circle|text|star|character|sprite|platform|scenario|collision|house|tree|mountain|cloud|water|road|bridge|building,name,x,y,w,h,color,text,fontSize,animated,collision}. Também update_object com name e changes, delete_object com name, replace_scene com objects apenas se o usuário pedir substituição.",
       "Ações 3D: create_3d_object com object {kind:cube|sphere|terrain|building|character|tree|camera|light|house|castle|bridge|road|water|mountain|rock|lamp|bench|fountain|portal|forest|village|city|temple|room,name,x,y,z,sx,sy,sz,rx,ry,rz,color}. Também update_3d_object e delete_3d_object com name. Prefabs compostos economizam ações, mas use vários objetos quando o pedido exigir partes separadas.",
-      "No máximo 12 ações por resposta. Priorize os elementos estruturais mais importantes se o pedido for grande; explique o que ficou pendente em vez de fingir que criou tudo.",
+      "O editor aceita até 30 ações por resposta. Use o limite com inteligência para montar cenas compostas; agrupe detalhes em prefabs quando possível. Se o pedido exceder a capacidade, priorize a estrutura principal e explique claramente o que ficou pendente.",
       "Personagens podem ter aparência, posição e escala. Para interações não violentas, descreva lógica genérica apenas quando suportada; não afirme que comportamentos foram instalados se só criou objetos. Não crie armas nem instruções de combate.",
       "Só preencha code quando o usuário pedir código ou uma lógica que o editor não consegue representar por ações; esse código é inserido para revisão e não é executado automaticamente.",
       "Contexto do projeto atual: " + JSON.stringify(project).slice(0, 600),
