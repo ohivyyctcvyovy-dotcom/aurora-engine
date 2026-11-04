@@ -1,6 +1,7 @@
 // Prefabs procedurais do Aurora Engine. Tudo é desenhado com Canvas/Three.js, sem imagens externas.
 export function drawAurora2DPrefab(ctx,o){
  const w=o.w||120,h=o.h||100;
+ if(!['house','tree','mountain','cloud','water','road','bridge','building'].includes(o.type))return false;
  ctx.save();
  if(o.type==='house'){
   ctx.fillStyle='#9b7654';ctx.fillRect(-w*.38,-h*.12,w*.76,h*.58);
