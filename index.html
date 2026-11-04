@@ -248,29 +248,12 @@ body.ui-collapsed .toolbar,body.ui-collapsed #viewport3d .view3dbar{display:none
 }
 
 
-/* Controles direcionais de movimento 3D */
-#movePad3d{position:absolute;z-index:8;left:12px;bottom:44px;width:190px;padding:9px;border:1px solid #80683e;border-radius:13px;background:#111018ef;box-shadow:0 8px 28px #0009;display:flex;flex-direction:column;gap:6px;touch-action:manipulation}
-#movePad3d .movePadTitle{font-size:10px;letter-spacing:.12em;color:#ffe2a0;text-align:center;font-weight:800}
-#movePad3d .movePadRow{display:flex;align-items:center;justify-content:center;gap:7px}
-#movePad3d button{width:43px;height:39px;min-width:43px;padding:0;border-radius:9px;border:1px solid #80683e;background:linear-gradient(#29232f,#17151c);color:#ffe2a0;font-size:15px;font-weight:800;touch-action:manipulation;user-select:none}
-#movePad3d button:active{background:#57452a;transform:scale(.96)}
-#movePad3d label{font-size:10px;color:#c9c1b4;display:flex;align-items:center;gap:5px}
-#moveStep3d{background:#09090b;color:#fff;border:1px solid #51432d;border-radius:6px;padding:6px;font-size:11px}
-#movePadHint{font-size:9px;text-align:center;color:#aaa3b2;min-height:12px}
-@media(max-width:600px){#movePad3d{left:7px;bottom:43px;width:172px;padding:7px;gap:5px}#movePad3d button{width:40px;height:38px;min-width:40px}#movePad3d .movePadRow{gap:5px}}
-@media(orientation:landscape) and (max-width:900px){#movePad3d{left:7px;bottom:39px;width:164px;padding:6px;gap:3px}#movePad3d button{height:32px;width:36px;min-width:36px}}
 </style><script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/"}}</script></head><body>
 <header><div class="brand">AURORA ENGINE<small>GAME CREATION STUDIO · PROTÓTIPO 0.1</small></div><div class="spacer"></div><span class="status" id="status">Projeto local</span><button id="collapseUiBtn" type="button" aria-expanded="true">− Ocultar barras</button><button id="objectsBtn">Objetos</button><button id="libraryBtn">▦ Biblioteca</button><button id="testGameBtn">▷ Testar jogo</button><button id="fpsBtn">✦ Gerar FPS</button><button id="aiBtn">Aurora AI</button><button id="undoBtn">↶ Desfazer</button><button id="saveBtn">Salvar</button><button id="installAppBtn" type="button" title="Instalar na tela inicial">＋ Instalar</button><button id="runBtn" type="button" hidden aria-hidden="true">Executar</button></header><button id="restoreUiBtn" type="button" hidden>＋ Mostrar interface</button>
 <div class="layout">
 <aside class="panel left" id="objectsPanel"><div class="sect"><div class="panel-head"><h3>Objetos</h3><button class="back-panel" id="backObjects" type="button">← Voltar</button></div></div><div class="sect"><h3>Criar objeto</h3><div class="tools"><button data-add="rect">▰ Retângulo</button><button data-add="circle">● Círculo</button><button data-add="text">T Texto</button><button data-add="star">✦ Estrela</button><button data-add="character">♟ Personagem</button><button data-add="sprite">▧ Sprite</button><button data-add="platform">▱ Plataforma</button><button data-add="scenario">▦ Cenário</button><button data-add="collision">▣ Colisão</button><button data-add="house">⌂ Casa</button><button data-add="tree">♣ Árvore</button><button data-add="mountain">▲ Montanha</button><button data-add="water">≈ Água</button><button data-add="road">━ Estrada</button><button data-add="bridge">⌁ Ponte</button><button data-add="building">▥ Prédio</button></div></div><div class="sect"><h3>Hierarquia</h3><div class="tree" id="tree"></div></div><div class="sect"><h3>Cena</h3><button id="clearScene">Nova cena vazia</button></div></aside>
 <main class="center"><nav class="toolbar"><button id="mode3d" class="active" type="button">Cena 3D</button><button id="mode2d" type="button">Cena 2D</button><button id="codeBtn">Código</button><button id="logicBtn">◇ Lógica visual</button><button id="gridBtn" class="active">Grade</button><button id="exportBtn">Exportar projeto</button><button id="importBtn">Importar projeto</button><input id="file" type="file" accept=".json" hidden></nav><div class="stagewrap"><div class="stage"><canvas id="canvas" width="1280" height="720"></canvas><div id="viewport3d" hidden><div class="view3dbar"><span>VISTA 3D · ARRASTE PARA GIRAR</span><button id="addCube3d" type="button">+ Cubo</button><button id="addSphere3d" type="button">+ Esfera</button><button id="addTerrain3d" type="button">+ Terreno</button><button id="addBuilding3d" type="button">+ Prédio</button><button id="addCharacter3d" type="button">+ Personagem</button><button id="addTree3d" type="button">+ Árvore</button><button id="addCamera3d" type="button">+ Câmera</button><button id="addLight3d" type="button">+ Luz</button><button type="button" id="addHouse3d">+ Casa</button><button type="button" id="addCastle3d">+ Castelo</button><button type="button" id="addForest3d">+ Floresta</button><button type="button" id="addVillage3d">+ Vila</button><button type="button" id="addCity3d">+ Cidade</button><button type="button" id="addTemple3d">+ Templo</button><button id="zoomOut3d" type="button" title="Afastar">−</button><input id="zoomRange3d" type="range" min="0.08" max="8" step="0.02" value="1" aria-label="Zoom da cena 3D" style="width:76px;accent-color:#d7ad58"><button id="zoomIn3d" type="button" title="Aproximar">+</button><button id="focus3d" type="button">Focar item</button><button id="reset3d" type="button">Centralizar</button><button id="fullscreen3d" type="button">Tela cheia</button></div><div id="space3d"><div id="three3d" aria-label="Cena 3D renderizada"><div id="threeStatus">Preparando motor 3D…</div></div><div id="world3d"><div id="grid3d"></div><div id="axisX"></div><div id="axisZ"></div><div id="objects3d"></div></div>
-<div id="movePad3d" aria-label="Controles para mover o objeto selecionado">
- <div class="movePadTitle">MOVER OBJETO</div>
- <div class="movePadRow"><button type="button" data-move3d="z" data-step3d="-1" aria-label="Mover para trás">▲</button><button type="button" data-move3d="y" data-step3d="1" aria-label="Mover para cima">Y+</button></div>
- <div class="movePadRow"><button type="button" data-move3d="x" data-step3d="-1" aria-label="Mover para a esquerda">◀</button><button type="button" data-move3d="z" data-step3d="1" aria-label="Mover para frente">▼</button><button type="button" data-move3d="x" data-step3d="1" aria-label="Mover para a direita">▶</button></div>
- <div class="movePadRow"><button type="button" data-move3d="y" data-step3d="-1" aria-label="Mover para baixo">Y−</button><label>Passo <select id="moveStep3d"><option value="0.25">0,25</option><option value="0.5" selected>0,5</option><option value="1">1</option><option value="5">5</option></select></label></div>
- <div id="movePadHint">Selecione um objeto 3D</div>
-</div></div><div class="view3dhint">Toque/arraste para girar · Use dois dedos ou roda para ajustar a vista</div></div></div></div><div id="codeWorkspace" hidden><div class="codeHead"><b>EDITOR DE CÓDIGO</b><button id="closeCode">Fechar</button></div><p>Use a API <code>aurora.criar</code>, <code>aurora.cor</code> e <code>aurora.pular</code>.</p><textarea id="gameCode" spellcheck="false">// Exemplo: crie objetos nas cenas 2D e 3D
+</div><div class="view3dhint">Toque/arraste para girar · Use dois dedos ou roda para ajustar a vista</div></div></div></div><div id="codeWorkspace" hidden><div class="codeHead"><b>EDITOR DE CÓDIGO</b><button id="closeCode">Fechar</button></div><p>Use a API <code>aurora.criar</code>, <code>aurora.cor</code> e <code>aurora.pular</code>.</p><textarea id="gameCode" spellcheck="false">// Exemplo: crie objetos nas cenas 2D e 3D
 const painel = aurora.criar("rect", 640, 360);
 aurora.cor(painel, "#d7ad58");
 const cubo = aurora.criar3D("cube", 0, 0, 0);
@@ -297,6 +280,7 @@ function applyAIActions(actions){
  if(!Array.isArray(actions)||actions.length>30)throw new Error('Lista de ações inválida ou muito grande.');
  const allowedTypes=['rect','circle','text','star','character','sprite','platform','scenario','collision','house','tree','mountain','cloud','water','road','bridge','building'];
  const allowed3D=['cube','sphere','terrain','building','character','tree','camera','light','house','castle','bridge','road','water','mountain','rock','lamp','bench','fountain','portal','forest','village','city','temple','room'];
+ const kindAliases={wall:'cube',floor:'cube',door:'cube',table:'cube',desk:'cube',chair:'cube',window:'cube',column:'cube',pillar:'cube',stairs:'cube',step:'cube',platform:'cube',fence:'cube',box:'cube',block:'cube',ground:'terrain'};
  let changed=false,targetMode=null;
  if(actions.length)rememberUndo();
  for(const a of actions){
@@ -307,7 +291,7 @@ function applyAIActions(actions){
    targetMode='2D';changed=true;continue;
   }
   if(a.type==='create_object'){
-   const p=a.object||{};if(!allowedTypes.includes(p.type))continue;
+   const p=a.object||a;if(!allowedTypes.includes(p.type))continue;
    objects.push({id:crypto.randomUUID(),type:p.type,name:String(p.name||'Objeto IA').slice(0,60),x:clamp(p.x,0,1280,640),y:clamp(p.y,0,720,360),w:clamp(p.w,10,700,140),h:clamp(p.h,10,700,100),color:validColor(p.color)?p.color:'#d7ad58',text:String(p.text||'').slice(0,200),fontSize:clamp(p.fontSize,8,160,42),animated:p.animated===true,collision:p.collision===true});targetMode='2D';changed=true;
   }else if(a.type==='update_object'){
    const o=objects.find(v=>(a.id&&v.id===a.id)||(a.name&&v.name===a.name));if(!o)continue;
@@ -319,9 +303,9 @@ function applyAIActions(actions){
   }else if(a.type==='delete_object'){
    const match=o=>(a.id&&o.id===a.id)||(a.name&&o.name===a.name);const n=objects.length;objects=objects.filter(o=>!match(o));if(objects.length!==n){targetMode='2D';changed=true}
   }else if(a.type==='create_3d_object'){
-   const p=a.object||{};if(!allowed3D.includes(p.kind))continue;
+   const p=a.object||a;const requestedKind=String(p.kind||p.type||'').toLowerCase();const kind=allowed3D.includes(requestedKind)?requestedKind:(kindAliases[requestedKind]||'');if(!kind)continue;
    const rawColor=p.color;const color=typeof rawColor==='string'&&/^#[0-9a-fA-F]{6}$/.test(rawColor)?parseInt(rawColor.slice(1),16):(Number.isFinite(Number(rawColor))?Math.max(0,Math.min(0xffffff,Number(rawColor))):0xd7ad58);
-   objects3d.push({id:'ai3d-'+crypto.randomUUID(),kind:p.kind,name:String(p.name||'Objeto 3D IA').slice(0,60),color,x:clamp(p.x,-10000,10000,0),y:clamp(p.y,-10000,10000,0),z:clamp(p.z,-10000,10000,0),sx:clamp(p.sx,.05,100,1),sy:clamp(p.sy,.05,100,1),sz:clamp(p.sz,.05,100,1),rx:clamp(p.rx,-360,360,0),ry:clamp(p.ry,-360,360,0),rz:clamp(p.rz,-360,360,0)});
+   objects3d.push({id:'ai3d-'+crypto.randomUUID(),kind,name:String(p.name||requestedKind||'Objeto 3D IA').slice(0,60),color,x:clamp(p.x,-10000,10000,0),y:clamp(p.y,-10000,10000,0),z:clamp(p.z,-10000,10000,0),sx:clamp(p.sx??(p.width!=null?Number(p.width)/130:1),.05,100,1),sy:clamp(p.sy??(p.height!=null?Number(p.height)/130:1),.05,100,1),sz:clamp(p.sz??(p.depth!=null?Number(p.depth)/130:1),.05,100,1),rx:clamp(p.rx,-360,360,0),ry:clamp(p.ry,-360,360,0),rz:clamp(p.rz,-360,360,0)});
    extra3dCount++;targetMode='3D';changed=true;
   }else if(a.type==='update_3d_object'){
    const o=objects3d.find(v=>(a.id&&v.id===a.id)||(a.name&&v.name===a.name));if(!o)continue;const c=a.changes||{};
@@ -352,24 +336,26 @@ document.querySelectorAll('[data-add]').forEach(b=>b.onclick=()=>{switchMode('2D
 function save(){localStorage.setItem('aurora-project',JSON.stringify(projectSnapshot()));$('status').textContent='Projeto salvo neste navegador'}$('saveBtn').onclick=save;
 $('exportBtn').onclick=()=>{let blob=new Blob([JSON.stringify(projectSnapshot(),null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='projeto-aurora.json';a.click();URL.revokeObjectURL(a.href)};
 $('importBtn').onclick=()=>$('file').click();$('file').onchange=async e=>{try{let d=JSON.parse(await e.target.files[0].text());objects=d.objects||[];objects.forEach(o=>{if(!Array.isArray(o.logic))o.logic=[]});if(Array.isArray(d.objects3d))objects3d=d.objects3d.map(o=>({...o,logic:Array.isArray(o.logic)?o.logic:[]}));selected=null;selected3d=objects3d[0]?.id||null;refresh();render3dObjects();switchMode(d.mode==='3D'?'3D':'2D')}catch{alert('Arquivo de projeto inválido')}};
-$('clearScene').onclick=()=>{if(confirm('Criar uma cena vazia?')){rememberUndo();objects=[];selected=null;refresh();draw()}};let THREE=null,threeRenderer=null,threeScene=null,threeCamera=null,threeMeshes=new Map(),threeReady=false,threeFrame=0,transformControls=null;
+$('clearScene').onclick=()=>{if(confirm('Criar uma cena vazia?')){rememberUndo();objects=[];selected=null;refresh();draw()}};let THREE=null,threeRenderer=null,threeScene=null,threeCamera=null,threeMeshes=new Map(),threeReady=false,threeInitializing=false,threeFrame=0,transformControls=null;
 async function initThree3D(){
+ if(threeReady||threeInitializing)return;
+ threeInitializing=true;
  try{
   THREE=await import('https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js');
   const {TransformControls}=await import('https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/controls/TransformControls.js');
   const host=$('three3d');if(!host||threeReady)return;
   threeScene=new THREE.Scene();threeScene.background=new THREE.Color(0x171522);
-  threeCamera=new THREE.PerspectiveCamera(48,1,.1,30000);
+  threeCamera=new THREE.PerspectiveCamera(48,1,.1,100000);
   threeRenderer=new THREE.WebGLRenderer({antialias:true,alpha:false});threeRenderer.setPixelRatio(Math.min(devicePixelRatio||1,1.75));threeRenderer.shadowMap.enabled=true;threeRenderer.shadowMap.type=THREE.PCFSoftShadowMap;host.appendChild(threeRenderer.domElement);
-  transformControls=new TransformControls(threeCamera,threeRenderer.domElement);transformControls.setMode('translate');transformControls.setSpace('world');transformControls.setSize(1.15);threeScene.add(transformControls.getHelper());
+  transformControls=new TransformControls(threeCamera,threeRenderer.domElement);transformControls.setMode('translate');transformControls.setSpace('world');transformControls.setSize(.62);threeScene.add(transformControls.getHelper());
   transformControls.addEventListener('dragging-changed',e=>{drag3d=null;space3d.style.cursor=e.value?'grabbing':'grab'});
   transformControls.addEventListener('objectChange',()=>{const mesh=transformControls.object;if(!mesh)return;const entry=[...threeMeshes.entries()].find(([,m])=>m===mesh);if(!entry)return;const o=objects3d.find(v=>v.id===entry[0]);if(!o)return;o.x=mesh.position.x;o.y=mesh.position.y;o.z=mesh.position.z;o.sx=Math.max(.05,mesh.scale.x);o.sy=Math.max(.05,mesh.scale.y);o.sz=Math.max(.05,mesh.scale.z);o.rx=THREE.MathUtils.radToDeg(mesh.rotation.x);o.ry=THREE.MathUtils.radToDeg(mesh.rotation.y);o.rz=THREE.MathUtils.radToDeg(mesh.rotation.z);});
   threeScene.add(new THREE.HemisphereLight(0xded7ff,0x30243d,2));
   const key=new THREE.DirectionalLight(0xffe2ad,3);key.position.set(500,700,450);key.castShadow=true;threeScene.add(key);
   const fill=new THREE.PointLight(0x8c78ff,700,1800);fill.position.set(-450,180,-350);threeScene.add(fill);
-  const grid=new THREE.GridHelper(6000,300,0xb99a5e,0x51466b);grid.position.y=-1;threeScene.add(grid);
-  const axes=new THREE.AxesHelper(600);axes.position.set(0,-.95,0);threeScene.add(axes);
-  threeReady=true;$('world3d').style.display='none';const threeStatus=$('threeStatus');if(threeStatus)threeStatus.style.display='none';
+  const grid=new THREE.GridHelper(30000,600,0xb99a5e,0x51466b);grid.position.y=-1;threeScene.add(grid);
+  const axes=new THREE.AxesHelper(1500);axes.position.set(0,-.95,0);threeScene.add(axes);
+  threeReady=true;threeInitializing=false;$('world3d').style.display='none';const threeStatus=$('threeStatus');if(threeStatus)threeStatus.style.display='none';
   syncThreeObjects();requestAnimationFrame(()=>{resizeThree3D();if(objects3d.length)focusScene3D()});
   threeRenderer.domElement.addEventListener('pointerdown',e=>{if(transformControls?.dragging||transformControls?.axis)return;const rect=threeRenderer.domElement.getBoundingClientRect(),mouse=new THREE.Vector2((e.clientX-rect.left)/rect.width*2-1,-((e.clientY-rect.top)/rect.height)*2+1),ray=new THREE.Raycaster();ray.setFromCamera(mouse,threeCamera);const hits=ray.intersectObjects([...threeMeshes.values()],true);if(hits.length){let root=hits[0].object;while(root.parent&&!threeMeshes.has([...threeMeshes].find(([,m])=>m===root)?.[0]))root=root.parent;const entry=[...threeMeshes.entries()].find(([,m])=>m===root);if(entry)select3d(entry[0])}}); 
   // Controles reais de órbita diretamente no canvas WebGL (o canvas cobre o espaço 3D).
@@ -398,7 +384,7 @@ async function initThree3D(){
   const animate=()=>{if(!threeReady)return;threeFrame=requestAnimationFrame(animate);threeRenderer.render(threeScene,threeCamera)};
   animate();window.addEventListener('resize',resizeThree3D);if(window.ResizeObserver){const ro=new ResizeObserver(()=>resizeThree3D());ro.observe(host);}
   $('foot').textContent='Cena 3D WebGL ativa · Three.js';
- }catch(err){$('foot').textContent='Falha ao iniciar o 3D: '+(err?.message||'erro desconhecido');const panel=$('threeStatus');if(panel){panel.className='error';panel.style.display='block';panel.textContent='Não foi possível iniciar o 3D. Verifique a conexão e recarregue a página. Detalhe: '+(err?.message||'erro desconhecido')}console.error('Aurora Three.js:',err)}
+ }catch(err){threeInitializing=false;$('foot').textContent='Falha ao iniciar o 3D: '+(err?.message||'erro desconhecido');const panel=$('threeStatus');if(panel){panel.className='error';panel.style.display='block';panel.textContent='Não foi possível iniciar o 3D. Verifique a conexão e recarregue a página. Detalhe: '+(err?.message||'erro desconhecido')}console.error('Aurora Three.js:',err)}
 }
 function resizeThree3D(){if(!threeRenderer||!threeCamera)return;const host=$('three3d');if(!host||!host.isConnected)return;const w=Math.max(1,host.clientWidth),h=Math.max(1,host.clientHeight);threeRenderer.setPixelRatio(Math.min(window.devicePixelRatio||1,1.5));threeRenderer.setSize(w,h,false);threeCamera.aspect=w/h;threeCamera.updateProjectionMatrix();updateThreeCamera()}
 function focusScene3D(){if(!threeCamera||!THREE)return;rotX=-24;rotY=-28;zoom3d=1;updateThreeCamera();const range=$('zoomRange3d');if(range)range.value='1';resizeThree3D()}
@@ -435,6 +421,7 @@ function syncThreeObjects(){
  threeMeshes.clear();
  objects3d.forEach(o=>{const mesh=build3dObject(o);threeScene.add(mesh);threeMeshes.set(o.id,mesh)});
  updateThreeCamera();
+ if(selected3d&&transformControls){const selectedMesh=threeMeshes.get(selected3d);if(selectedMesh)transformControls.attach(selectedMesh)}
 }
 function update3d(){updateThreeCamera();const world=$('world3d');if(world)world.style.transform='translate3d(-50%,-50%,0) rotateX('+rotX+'deg) rotateY('+rotY+'deg) scale('+zoom3d+')'}
 function add3d(kind){const id='obj3d-'+(++extra3dCount),labels={cube:'Cubo',sphere:'Esfera',terrain:'Terreno',building:'Prédio',character:'Personagem',tree:'Árvore',camera:'Câmera',light:'Luz',house:'Casa',castle:'Castelo',bridge:'Ponte',road:'Estrada',water:'Água',mountain:'Montanha',rock:'Rocha',lamp:'Poste de luz',bench:'Banco',fountain:'Fonte',portal:'Portal',forest:'Floresta',village:'Vila',city:'Cidade',temple:'Templo',room:'Interior'},colors={terrain:0x526b45,building:0x8996a5,character:0xd7ad58,tree:0x39734a,camera:0x536d91,light:0xffd58a,house:0xc99a62,castle:0xb4a38c,bridge:0x806348,road:0x34363d,water:0x287fa8,mountain:0x78849a,rock:0x77736d,forest:0x39734a,village:0x657b4b,city:0x8293a4,temple:0xe1d7bd,room:0x8d9aa4},o={id,kind,name:labels[kind]||'Objeto 3D',color:colors[kind]||0xd7ad58,x:kind==='terrain'?0:extra3dCount*24,y:0,z:0,sx:1,sy:1,sz:1,rx:0,ry:0,rz:0};objects3d.push(o);render3dObjects();select3d(id)}
