@@ -6,6 +6,10 @@ Editor de criação de jogos com interface mobile-first, visual preto e dourado,
 
 O arquivo principal é `index.html`. Para publicar no GitHub Pages, abra **Settings → Pages → Deploy from a branch → main → /(root)**. Depois o GitHub mostrará a URL publicada na seção Pages.
 
+## Forja — construtor de cenas
+
+O painel Forja interpreta pedidos em linguagem natural e cria cenas em etapas, posicionando objetos 2D/3D por meio das ações permitidas pelo editor. O status aparece no painel e as alterações podem ser revertidas com **Desfazer**. Para respeitar os limites do Worker atual, cada etapa envia até 4 ações, por até 5 etapas (até 20 ações por solicitação). Cenas maiores podem ser continuadas em um novo pedido. A chave da API permanece protegida no Worker, sem ser inserida no HTML ou no navegador.
+
 ## Aurora AI — integração com a API existente
 
 O painel Aurora AI já vem configurado por padrão para usar:
