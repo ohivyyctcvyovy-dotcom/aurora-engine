@@ -283,8 +283,25 @@ function applyAIActions(actions){
  const kindAliases={wall:'cube',floor:'cube',door:'cube',table:'cube',desk:'cube',chair:'cube',window:'cube',column:'cube',pillar:'cube',stairs:'cube',step:'cube',platform:'cube',fence:'cube',box:'cube',block:'cube',ground:'terrain'};
  let changed=false,targetMode=null;
  if(actions.length)rememberUndo();
- for(const a of actions){
+ const actionAliases={create_2d_object:'create_object',add_object:'create_object',spawn_object:'create_object',create3d:'create_3d_object',create_3d:'create_3d_object',add_3d_object:'create_3d_object',spawn_3d_object:'create_3d_object'};
+ const typeAliases2D={player:'character',enemy:'character',npc:'character',avatar:'character',floor:'platform',ground:'platform',wall:'rect',obstacle:'rect',background:'scenario',bg:'scenario',hud:'text',label:'text',button:'rect',box:'rect'};
+ for(let a of actions){
   if(!a||typeof a!=='object')continue;
+  a={...a};
+  const rawAction=String(a.type||a.action||a.operation||a.op||'').toLowerCase();
+  a.type=actionAliases[rawAction]||rawAction;
+  let p=a.object||a.data||a.properties||a;
+  if(a.type==='create_object'){
+   p={...p};const rawType=String(p.type||p.kind||p.objectType||p.shape||'').toLowerCase();
+   p.type=allowedTypes.includes(rawType)?rawType:(typeAliases2D[rawType]||'');
+   a.object=p;
+  }else if(a.type==='create_3d_object'){
+   p={...p};const rawKind=String(p.kind||p.type||p.objectType||p.shape||'').toLowerCase();
+   p.kind=allowed3D.includes(rawKind)?rawKind:(kindAliases[rawKind]||'');
+   a.object=p;
+  }else if(!a.type&&typeAliases2D[String(a.kind||a.objectType||'').toLowerCase()]){
+   a.type='create_object';a.object={...a,type:typeAliases2D[String(a.kind||a.objectType).toLowerCase()]};
+  }
   if(a.type==='replace_scene'){
    if(!Array.isArray(a.objects)||a.objects.length>300)continue;
    objects=a.objects.filter(p=>p&&allowedTypes.includes(p.type)).map(p=>({id:crypto.randomUUID(),type:p.type,name:String(p.name||'Objeto IA').slice(0,60),x:clamp(p.x,0,1280,640),y:clamp(p.y,0,720,360),w:clamp(p.w,10,700,140),h:clamp(p.h,10,700,100),color:validColor(p.color)?p.color:'#d7ad58',text:String(p.text||'').slice(0,200),fontSize:clamp(p.fontSize,8,160,42),animated:p.animated===true,collision:p.collision===true}));
@@ -292,7 +309,9 @@ function applyAIActions(actions){
   }
   if(a.type==='create_object'){
    const p=a.object||a;if(!allowedTypes.includes(p.type))continue;
-   objects.push({id:crypto.randomUUID(),type:p.type,name:String(p.name||'Objeto IA').slice(0,60),x:clamp(p.x,0,1280,640),y:clamp(p.y,0,720,360),w:clamp(p.w,10,700,140),h:clamp(p.h,10,700,100),color:validColor(p.color)?p.color:'#d7ad58',text:String(p.text||'').slice(0,200),fontSize:clamp(p.fontSize,8,160,42),animated:p.animated===true,collision:p.collision===true});targetMode='2D';changed=true;
+   const dims=p.size&&typeof p.size==='object'?p.size:{};
+   const width=p.w??p.width??dims.width,height=p.h??p.height??dims.height;
+   objects.push({id:crypto.randomUUID(),type:p.type,name:String(p.name||p.label||'Objeto IA').slice(0,60),x:clamp(p.x??p.position?.x,0,1280,640),y:clamp(p.y??p.position?.y,0,720,360),w:clamp(width,10,700,p.type==='platform'?320:140),h:clamp(height,10,700,p.type==='platform'?32:100),color:validColor(p.color)?p.color:'#d7ad58',text:String(p.text||p.label||'').slice(0,200),fontSize:clamp(p.fontSize,8,160,42),animated:p.animated===true,collision:p.collision===true});targetMode='2D';changed=true;
   }else if(a.type==='update_object'){
    const o=objects.find(v=>(a.id&&v.id===a.id)||(a.name&&v.name===a.name));if(!o)continue;
    const c=a.changes||{};if(typeof c.name==='string')o.name=c.name.slice(0,60);
@@ -303,7 +322,7 @@ function applyAIActions(actions){
   }else if(a.type==='delete_object'){
    const match=o=>(a.id&&o.id===a.id)||(a.name&&o.name===a.name);const n=objects.length;objects=objects.filter(o=>!match(o));if(objects.length!==n){targetMode='2D';changed=true}
   }else if(a.type==='create_3d_object'){
-   const p=a.object||a;const requestedKind=String(p.kind||p.type||'').toLowerCase();const kind=allowed3D.includes(requestedKind)?requestedKind:(kindAliases[requestedKind]||'');if(!kind)continue;
+   const p=a.object||a;const requestedKind=String(p.kind||p.type||p.objectType||'').toLowerCase();const kind=allowed3D.includes(requestedKind)?requestedKind:(kindAliases[requestedKind]||'');if(!kind)continue;
    const rawColor=p.color;const color=typeof rawColor==='string'&&/^#[0-9a-fA-F]{6}$/.test(rawColor)?parseInt(rawColor.slice(1),16):(Number.isFinite(Number(rawColor))?Math.max(0,Math.min(0xffffff,Number(rawColor))):0xd7ad58);
    objects3d.push({id:'ai3d-'+crypto.randomUUID(),kind,name:String(p.name||requestedKind||'Objeto 3D IA').slice(0,60),color,x:clamp(p.x,-10000,10000,0),y:clamp(p.y,-10000,10000,0),z:clamp(p.z,-10000,10000,0),sx:clamp(p.sx??(p.width!=null?Number(p.width)/130:1),.05,100,1),sy:clamp(p.sy??(p.height!=null?Number(p.height)/130:1),.05,100,1),sz:clamp(p.sz??(p.depth!=null?Number(p.depth)/130:1),.05,100,1),rx:clamp(p.rx,-360,360,0),ry:clamp(p.ry,-360,360,0),rz:clamp(p.rz,-360,360,0)});
    extra3dCount++;targetMode='3D';changed=true;
@@ -457,6 +476,7 @@ function switchMode(mode){
   render3dObjects();
   requestAnimationFrame(()=>{resizeThree3D();updateThreeCamera()});
  }else{
+  refresh();
   draw();
   requestAnimationFrame(()=>{if(threeRenderer)resizeThree3D()});
  }
