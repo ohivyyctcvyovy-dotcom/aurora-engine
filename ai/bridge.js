@@ -47,9 +47,9 @@ export function createAIClient({getEndpoint,getProject,onMessage,applyActions,on
       "No 2D, escolha tipos conforme a função visual: rect para formas/estruturas, platform para pisos, scenario para fundo, character/sprite para personagens, text para rótulos e prefabs house/tree/mountain/cloud/water/road/bridge/building quando adequados. Varie largura e altura conforme o objeto; não use o mesmo tamanho para tudo.",
       "Se o pedido descrever salas, mapa ou edifício, construa a planta de forma lógica: piso, paredes externas, divisórias, vãos de passagem e portas representadas por objetos. Se pedir uma quantidade exata, respeite-a. Não diga que uma porta ou comportamento é funcional se o editor só criar a representação visual.",
       "Seja fiel ao pedido e ao contexto da cena. Preserve os objetos existentes; acrescente ou atualize apenas o necessário. Só substitua ou apague a cena quando isso for solicitado explicitamente. Se faltar um detalhe não essencial, escolha uma solução sensata e informe brevemente a escolha.",
-      "Use as ações estruturadas suportadas pelo editor. Retorne SOMENTE JSON válido, sem Markdown: {\"reply\":\"resumo curto\",\"actions\":[],\"code\":\"\"}. Não invente tipos ou campos que não estejam listados.",
+      "Use as ações estruturadas suportadas pelo editor. Retorne SOMENTE JSON válido, sem Markdown: {\"reply\":\"resumo curto\",\"actions\":[],\"code\":\"\"}. Não invente tipos ou campos que não estejam listados. Quando o usuário pedir para CRIAR algo, obrigatoriamente inclua ações create_object ou create_3d_object; nunca diga que criou se actions estiver vazio. Para 3D, confira que cada ação use kind aceito e coordenadas/escala visíveis na cena.",
       "Ações 2D: create_object com object {type:rect|circle|text|star|character|sprite|platform|scenario|collision|house|tree|mountain|cloud|water|road|bridge|building,name,x,y,w,h,color,text,fontSize,animated,collision}. Também update_object com name e changes, delete_object com name, replace_scene com objects apenas se o usuário pedir substituição.",
-      "Ações 3D: create_3d_object com object {kind:cube|sphere|terrain|building|character|tree|camera|light|house|castle|bridge|road|water|mountain|rock|lamp|bench|fountain|portal|forest|village|city|temple|room,name,x,y,z,sx,sy,sz,rx,ry,rz,color}. Também update_3d_object e delete_3d_object com name. Prefabs compostos economizam ações, mas use vários objetos quando o pedido exigir partes separadas.",
+      "Ações 3D: create_3d_object com object {kind:cube|sphere|terrain|building|character|tree|camera|light|house|castle|bridge|road|water|mountain|rock|lamp|bench|fountain|portal|forest|village|city|temple|room,name,x,y,z,sx,sy,sz,rx,ry,rz,color}. Também update_3d_object e delete_3d_object com name. Para paredes, pisos, portas, mesas, cadeiras, janelas e colunas, use cube com name descritivo e sx/sy/sz adequados. Prefabs compostos economizam ações, mas use vários objetos quando o pedido exigir partes separadas.",
       "O editor aceita até 30 ações por resposta. Use o limite com inteligência para montar cenas compostas; agrupe detalhes em prefabs quando possível. Se o pedido exceder a capacidade, priorize a estrutura principal e explique claramente o que ficou pendente.",
       "Personagens podem ter aparência, posição e escala. Para interações não violentas, descreva lógica genérica apenas quando suportada; não afirme que comportamentos foram instalados se só criou objetos. Não crie armas nem instruções de combate.",
       "Só preencha code quando o usuário pedir código ou uma lógica que o editor não consegue representar por ações; esse código é inserido para revisão e não é executado automaticamente.",
@@ -81,8 +81,8 @@ export function createAIClient({getEndpoint,getProject,onMessage,applyActions,on
       onMessage("assistant", message);
       return {...data, parsed};
     }
-    onMessage("assistant", raw);
-    return data;
+    onMessage("assistant", "A Aurora respondeu em texto, mas não enviou ações estruturadas. Portanto, nenhuma criação foi aplicada à cena. Tente novamente descrevendo o objeto ou cenário; a IA precisa retornar ações para o editor construir.\n\n"+raw);
+    return {...data, parsed:null, applied:false};
   }
   return {ask,showError};
 }
