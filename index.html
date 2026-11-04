@@ -208,28 +208,62 @@ aurora.girar3D(cubo, 0, 25, 0);</textarea><div class="codeActions"><button class
 <button id="aiRestore" type="button" aria-label="Expandir painel lateral" title="Expandir painel">＋</button>
 <script type="module">
 import {createAIClient} from './ai/bridge.js';
-const $=id=>document.getElementById(id),canvas=$('canvas'),ctx=canvas.getContext('2d');let is3d=true,rotX=-22,rotY=-28,zoom3d=1,drag3d=null,extra3dCount=0,selected3d=null,objects3d=[];let objects=[],selected=null,grid=true,running=false,drag=null,undoStack=[];
-const ai=createAIClient({getEndpoint:()=>$('aiEndpoint').value.trim(),getProject:()=>projectSnapshot(),applyActions:applyAIActions,onMessage:(role,text)=>{const d=document.createElement('div');d.className='bubble '+(role==='user'?'user':'');d.textContent=text;$('aiMessages').append(d);$('aiMessages').scrollTop=$('aiMessages').scrollHeight}});
+const $=id=>document.getElementById(id),canvas=$('canvas'),ctx=canvas.getContext('2d');
+const AI_ENDPOINT_DEFAULT='https://aurora-api.ohivyyctcvyovy.workers.dev';
+const aiEndpointInput=$('aiEndpoint');
+aiEndpointInput.value=localStorage.getItem('aurora-engine-ai-endpoint')||AI_ENDPOINT_DEFAULT;
+aiEndpointInput.addEventListener('change',()=>localStorage.setItem('aurora-engine-ai-endpoint',aiEndpointInput.value.trim()));
+let is3d=true,rotX=-22,rotY=-28,zoom3d=1,drag3d=null,extra3dCount=0,selected3d=null,objects3d=[];let objects=[],selected=null,grid=true,running=false,drag=null,undoStack=[];
+const ai=createAIClient({getEndpoint:()=>$('aiEndpoint').value.trim(),getProject:()=>projectSnapshot(),applyActions:applyAIActions,onCode:code=>{$('gameCode').value=code;$('codeWorkspace').hidden=false;canvas.hidden=is3d;$('viewport3d').hidden=!is3d;$('codeStatus').textContent='Código gerado pela Aurora. Revise antes de executar.'},onMessage:(role,text)=>{const d=document.createElement('div');d.className='bubble '+(role==='user'?'user':'');d.textContent=text;$('aiMessages').append(d);$('aiMessages').scrollTop=$('aiMessages').scrollHeight}});
 const projectSnapshot=()=>({name:'Meu jogo',engine:'Aurora Engine',mode:is3d?'3D':'2D',width:canvas.width,height:canvas.height,objects:objects.map(o=>({...o})),objects3d:objects3d.map(o=>({...o}))});
-function rememberUndo(){undoStack.push(JSON.stringify(objects));if(undoStack.length>30)undoStack.shift();$('undoBtn').disabled=false}
-function undo(){const old=undoStack.pop();if(!old)return;objects=JSON.parse(old);selected=null;refresh();draw();$('status').textContent='Alteração desfeita'}
+function rememberUndo(){undoStack.push(JSON.stringify({objects,objects3d}));if(undoStack.length>30)undoStack.shift();$('undoBtn').disabled=false}
+function undo(){const old=undoStack.pop();if(!old)return;const snap=JSON.parse(old);if(Array.isArray(snap)){objects=snap}else{objects=Array.isArray(snap.objects)?snap.objects:[];objects3d=Array.isArray(snap.objects3d)?snap.objects3d:[]}selected=null;selected3d=null;refresh();draw();render3dObjects();$('status').textContent='Alteração desfeita'}
 $('undoBtn').onclick=undo;
 function applyAIActions(actions){
  if(!Array.isArray(actions)||actions.length>30)throw new Error('Lista de ações inválida ou muito grande.');
- const allowedTypes=['rect','circle','text','star','character','sprite','platform','scenario','collision'];let changed=false;
+ const allowedTypes=['rect','circle','text','star','character','sprite','platform','scenario','collision'];
+ const allowed3D=['cube','sphere','terrain','building','character','tree','camera','light'];
+ let changed=false,targetMode=null;
+ if(actions.length)rememberUndo();
  for(const a of actions){
   if(!a||typeof a!=='object')continue;
+  if(a.type==='replace_scene'){
+   if(!Array.isArray(a.objects)||a.objects.length>300)continue;
+   objects=a.objects.filter(p=>p&&allowedTypes.includes(p.type)).map(p=>({id:crypto.randomUUID(),type:p.type,name:String(p.name||'Objeto IA').slice(0,60),x:clamp(p.x,0,1280,640),y:clamp(p.y,0,720,360),w:clamp(p.w,10,700,140),h:clamp(p.h,10,700,100),color:validColor(p.color)?p.color:'#d7ad58',text:String(p.text||'').slice(0,200),fontSize:clamp(p.fontSize,8,160,42),animated:p.animated===true,collision:p.collision===true}));
+   targetMode='2D';changed=true;continue;
+  }
   if(a.type==='create_object'){
    const p=a.object||{};if(!allowedTypes.includes(p.type))continue;
-   rememberUndo();objects.push({id:crypto.randomUUID(),type:p.type,name:String(p.name||'Objeto IA').slice(0,60),x:clamp(p.x,0,1280,640),y:clamp(p.y,0,720,360),w:clamp(p.w,10,700,140),h:clamp(p.h,10,700,100),color:validColor(p.color)?p.color:'#d7ad58',text:String(p.text||'Texto').slice(0,200),fontSize:clamp(p.fontSize,8,160,42)});changed=true;
+   objects.push({id:crypto.randomUUID(),type:p.type,name:String(p.name||'Objeto IA').slice(0,60),x:clamp(p.x,0,1280,640),y:clamp(p.y,0,720,360),w:clamp(p.w,10,700,140),h:clamp(p.h,10,700,100),color:validColor(p.color)?p.color:'#d7ad58',text:String(p.text||'').slice(0,200),fontSize:clamp(p.fontSize,8,160,42),animated:p.animated===true,collision:p.collision===true});targetMode='2D';changed=true;
   }else if(a.type==='update_object'){
-   const o=objects.find(v=>v.id===a.id)||objects.find(v=>v.name===a.name);if(!o)continue;
-   rememberUndo();const c=a.changes||{};if(typeof c.name==='string')o.name=c.name.slice(0,60);for(const k of ['x','y','w','h','fontSize'])if(Number.isFinite(Number(c[k]))){const lim={x:[0,1280],y:[0,720],w:[10,700],h:[10,700],fontSize:[8,160]}[k];o[k]=Math.max(lim[0],Math.min(lim[1],Number(c[k])))}if(validColor(c.color))o.color=c.color;if(typeof c.text==='string')o.text=c.text.slice(0,200);changed=true;
+   const o=objects.find(v=>(a.id&&v.id===a.id)||(a.name&&v.name===a.name));if(!o)continue;
+   const c=a.changes||{};if(typeof c.name==='string')o.name=c.name.slice(0,60);
+   for(const k of ['x','y','w','h','fontSize'])if(Number.isFinite(Number(c[k]))){const lim={x:[0,1280],y:[0,720],w:[10,700],h:[10,700],fontSize:[8,160]}[k];o[k]=Math.max(lim[0],Math.min(lim[1],Number(c[k])))}
+   if(validColor(c.color))o.color=c.color;if(typeof c.text==='string')o.text=c.text.slice(0,200);
+   if(typeof c.animated==='boolean')o.animated=c.animated;if(typeof c.collision==='boolean')o.collision=c.collision;if(typeof c.hidden==='boolean')o.hidden=c.hidden;
+   targetMode='2D';changed=true;
   }else if(a.type==='delete_object'){
-   const n=objects.length;if(objects.some(o=>o.id===a.id||o.name===a.name))rememberUndo();objects=objects.filter(o=>o.id!==a.id&&o.name!==a.name);if(objects.length!==n)changed=true
+   const match=o=>(a.id&&o.id===a.id)||(a.name&&o.name===a.name);const n=objects.length;objects=objects.filter(o=>!match(o));if(objects.length!==n){targetMode='2D';changed=true}
+  }else if(a.type==='create_3d_object'){
+   const p=a.object||{};if(!allowed3D.includes(p.kind))continue;
+   const rawColor=p.color;const color=typeof rawColor==='string'&&/^#[0-9a-fA-F]{6}$/.test(rawColor)?parseInt(rawColor.slice(1),16):(Number.isFinite(Number(rawColor))?Math.max(0,Math.min(0xffffff,Number(rawColor))):0xd7ad58);
+   objects3d.push({id:'ai3d-'+crypto.randomUUID(),kind:p.kind,name:String(p.name||'Objeto 3D IA').slice(0,60),color,x:clamp(p.x,-10000,10000,0),y:clamp(p.y,-10000,10000,0),z:clamp(p.z,-10000,10000,0),sx:clamp(p.sx,.05,100,1),sy:clamp(p.sy,.05,100,1),sz:clamp(p.sz,.05,100,1),rx:clamp(p.rx,-360,360,0),ry:clamp(p.ry,-360,360,0),rz:clamp(p.rz,-360,360,0)});
+   extra3dCount++;targetMode='3D';changed=true;
+  }else if(a.type==='update_3d_object'){
+   const o=objects3d.find(v=>(a.id&&v.id===a.id)||(a.name&&v.name===a.name));if(!o)continue;const c=a.changes||{};
+   if(typeof c.name==='string')o.name=c.name.slice(0,60);
+   for(const k of ['x','y','z','sx','sy','sz','rx','ry','rz'])if(Number.isFinite(Number(c[k]))){const min=k.startsWith('s')?.05:-10000,max=k.startsWith('s')?100:(k.startsWith('r')?360:10000);o[k]=Math.max(min,Math.min(max,Number(c[k])))}
+   if(typeof c.color==='string'&&/^#[0-9a-fA-F]{6}$/.test(c.color))o.color=parseInt(c.color.slice(1),16);
+   targetMode='3D';changed=true;
+  }else if(a.type==='delete_3d_object'){
+   const match=o=>(a.id&&o.id===a.id)||(a.name&&o.name===a.name);const n=objects3d.length;objects3d=objects3d.filter(o=>!match(o));if(objects3d.length!==n){targetMode='3D';changed=true}
   }
  }
- if(changed){selected=null;refresh();draw();$('status').textContent='Aurora AI atualizou a cena'}
+ if(changed){
+  selected=null;selected3d=null;
+  if(targetMode)switchMode(targetMode);else{refresh();draw();render3dObjects()}
+  $('status').textContent='Aurora AI atualizou a cena';
+ }
  return changed;
 }
 function clamp(v,min,max,fallback){v=Number(v);return Number.isFinite(v)?Math.max(min,Math.min(max,v)):fallback}
