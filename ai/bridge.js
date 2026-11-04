@@ -29,6 +29,10 @@ function parseStructuredReply(raw) {
   return null;
 }
 export function createAIClient({getEndpoint,getProject,onMessage,applyActions,onCode}) {
+  function applySafely(actions) {
+    try { return !!applyActions?.(actions); }
+    catch { return false; }
+  }
   function showError(message) {
     onMessage("assistant","Não consegui conectar à Aurora: "+message+
       "\nConfira se o endereço da API está correto e se o Worker está disponível.");
@@ -76,7 +80,7 @@ export function createAIClient({getEndpoint,getProject,onMessage,applyActions,on
       let actions=Array.isArray(parsed.actions)?parsed.actions:[];
       let intent=String(parsed.intent||(actions.length?"build":"chat")).toLowerCase();
       let applied=false;
-      if(actions.length)applied=!!applyActions?.(actions);
+      if(actions.length)applied=applySafely(actions);
       if(intent==="build"&&!applied){
         const repair=[
           "A pessoa quer materializar sua ideia no motor de jogos. A resposta anterior não produziu alterações válidas.",
@@ -92,7 +96,7 @@ export function createAIClient({getEndpoint,getProject,onMessage,applyActions,on
         data=result.data;raw=result.raw;parsed=result.parsed;
         if(parsed&&typeof parsed==="object"){
           actions=Array.isArray(parsed.actions)?parsed.actions:[];
-          applied=actions.length?!!applyActions?.(actions):false;
+          applied=actions.length?applySafely(actions):false;
         }
       }
       if(typeof parsed?.code==="string"&&parsed.code.trim())onCode?.(parsed.code);
