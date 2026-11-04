@@ -1,27 +1,49 @@
 # Aurora Engine
 
-Editor de criação de jogos com interface mobile-first, visual preto e dourado e Aurora AI integrada.
+Editor de criação de jogos com interface mobile-first, visual preto e dourado, cenas 2D/3D e Aurora AI integrada.
 
 ## Abrir o editor
-O arquivo principal é `index.html`. Para ter um endereço de site, ative **Settings → Pages → Deploy from a branch → main → /(root)** no GitHub. Depois o GitHub mostrará a URL publicada na seção Pages. A publicação pode levar alguns minutos.
 
-## O que já funciona nesta versão
-- Editor 2D em Canvas com retângulo, círculo, estrela e texto.
+O arquivo principal é `index.html`. Para publicar no GitHub Pages, abra **Settings → Pages → Deploy from a branch → main → /(root)**. Depois o GitHub mostrará a URL publicada na seção Pages.
+
+## Aurora AI — integração com a API existente
+
+O painel Aurora AI já vem configurado por padrão para usar:
+
+`https://aurora-api.ohivyyctcvyovy.workers.dev`
+
+A ponte `ai/bridge.js` usa o contrato da API Aurora:
+- Envia `POST /chat` com `{ messages: [{ role: "user", content: "..." }] }`.
+- Recebe a resposta em `{ reply: "..." }`.
+- Interpreta respostas JSON estruturadas para aplicar ações no editor.
+- O endereço pode ser alterado no campo **Endpoint da IA**; a escolha fica salva no navegador.
+
+### O que a IA consegue fazer no editor
+
+- Criar, editar, mover e excluir objetos 2D.
+- Montar cenas com retângulos, círculos, textos, estrelas, plataformas, áreas de colisão e personagens visuais.
+- Criar, editar e excluir objetos 3D: cubos, esferas, terrenos, prédios, personagens visuais, árvores, câmeras e luzes.
+- Analisar o resumo da cena atual para orientar as alterações.
+- Gerar JavaScript e colocá-lo no **Editor de Código** para revisão.
+
+As ações estruturadas passam por uma lista de tipos permitidos no editor. As alterações podem ser revertidas pelo botão **Desfazer**. Código gerado não é executado automaticamente: revise-o antes de tocar em **Executar código**.
+
+### Requisitos da API
+
+A API precisa estar publicada e configurada com o segredo `OPENROUTER_API_KEY` no Cloudflare Worker. A chave permanece no servidor, nunca no HTML ou no navegador. O Worker deve permitir a origem `https://ohivyyctcvyovy-dotcom.github.io` e responder à rota `POST /chat` no formato descrito acima.
+
+A API gratuita pode ter limites de uso e disponibilidade do modelo. Não há garantia de uso ilimitado.
+
+## Recursos do editor
+
+- Editor 2D em Canvas e editor 3D WebGL.
 - Seleção, movimentação por toque/mouse e inspetor de propriedades.
-- Hierarquia, grade, exclusão e criação de cena.
-- Desfazer com o botão ou Ctrl+Z.
-- Salvar localmente, importar e exportar JSON.
-- Painel Aurora AI dentro do editor.
-- AI Bridge envia o contexto da cena ao Worker.
-- A IA pode criar, editar e excluir objetos por ações limitadas e validadas no próprio editor.
-
-## Ativar a IA
-1. Publique o Worker da pasta `worker` no Cloudflare.
-2. Configure o segredo `OPENROUTER_API_KEY` no Worker e, se necessário, `OPENROUTER_MODEL`.
-3. Copie a URL HTTPS do Worker.
-4. Abra o editor, toque em **Aurora AI**, cole a URL no campo **Endpoint da IA** e envie um pedido como: “Crie um círculo azul e um título dourado no centro”.
-
-A chave fica no Worker, nunca no HTML. O provedor/modelo pode ter limites ou custos; confira as condições antes de usar. O modo IA não é ativado até o Worker estar publicado e configurado.
+- Hierarquia, grade, criação de cenas e desfazer.
+- Salvar localmente, importar e exportar projetos JSON.
+- Editor de código JavaScript.
+- Biblioteca de recursos e editor de lógica visual.
+- Interface adaptada para celulares e computadores.
 
 ## Limites atuais
-Esta é uma versão inicial do editor 2D. O modo 3D, execução real de jogos, scripts, exportação Android/PC e ferramentas avançadas ainda precisam ser construídos. A IA só pode executar as três ações de objetos descritas acima; não tem acesso ao celular nem a contas externas.
+
+Esta é uma versão em evolução. A IA pode aplicar até 12 ações estruturadas por resposta. Recursos como execução completa de jogos exportáveis, multiplayer online, publicação Android/PC e sistemas avançados de jogo ainda exigem desenvolvimento adicional.
