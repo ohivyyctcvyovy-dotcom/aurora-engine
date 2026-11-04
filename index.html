@@ -277,7 +277,7 @@ function rememberUndo(){undoStack.push(JSON.stringify({objects,objects3d}));if(u
 function undo(){const old=undoStack.pop();if(!old)return;const snap=JSON.parse(old);if(Array.isArray(snap)){objects=snap}else{objects=Array.isArray(snap.objects)?snap.objects:[];objects3d=Array.isArray(snap.objects3d)?snap.objects3d:[]}selected=null;selected3d=null;refresh();draw();render3dObjects();$('status').textContent='Alteração desfeita'}
 $('undoBtn').onclick=undo;
 function applyAIActions(actions){
- if(!Array.isArray(actions)||actions.length>30)throw new Error('Lista de ações inválida ou muito grande.');
+ if(!Array.isArray(actions)||actions.length>60)throw new Error('Lista de ações inválida ou muito grande.');
  const allowedTypes=['rect','circle','text','star','character','sprite','platform','scenario','collision','house','tree','mountain','cloud','water','road','bridge','building'];
  const allowed3D=['cube','sphere','terrain','building','character','tree','camera','light','house','castle','bridge','road','water','mountain','rock','lamp','bench','fountain','portal','forest','village','city','temple','room'];
  const kindAliases={wall:'cube',floor:'cube',door:'cube',table:'cube',desk:'cube',chair:'cube',window:'cube',column:'cube',pillar:'cube',stairs:'cube',step:'cube',platform:'cube',fence:'cube',box:'cube',block:'cube',ground:'terrain'};
