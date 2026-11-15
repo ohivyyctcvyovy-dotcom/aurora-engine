@@ -63,6 +63,14 @@ Na **Biblioteca de Recursos**, use **Enviar meus arquivos**. Formatos aceitos:
 
 Você pode selecionar vários arquivos do pack de uma vez. Os arquivos são guardados no armazenamento local do navegador (IndexedDB) e permanecem neste dispositivo/navegador. O JSON exportado do projeto guarda as referências, mas não incorpora os arquivos binários; mantenha os arquivos originais. Arquivos ZIP e modelos glTF com dependências externas não são importados diretamente; prefira GLB.
 
+## Recursos inspirados na Godot
+
+A Aurora está evoluindo com conceitos de árvore de cena, inspetor, cenas reutilizáveis, recursos, sinais, física, animação e depuração. O mapa técnico, o que já existe e as próximas etapas estão em [GODOT-ROADMAP.md](./GODOT-ROADMAP.md). A árvore atual ainda é uma lista plana; o sistema pai/filho e as cenas reutilizáveis são etapas futuras.
+
+## Seleção de modelos de IA
+
+O painel da Forja tem uma lista de modelos autorizados. Toque em **Atualizar modelos disponíveis** para consultar o catálogo pelo Worker. O navegador nunca recebe a chave do OmniRoute. O Worker mostra somente os IDs definidos em `AI_ALLOWED_MODELS` e aceita no chat apenas um desses IDs. A opção vazia usa `OMNIROUTE_MODEL`. Inclua nessa lista somente modelos cuja condição de uso e gratuidade você confirmou no seu OmniRoute.
+
 ## OmniRoute
 
 O Worker usa a API compatível com OpenAI do OmniRoute em `/v1/chat/completions`. Configure no Cloudflare Worker:
