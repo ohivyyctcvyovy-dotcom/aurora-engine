@@ -50,20 +50,35 @@ async function callTool(env,name,args){
 export default {async fetch(req,env){
  const u=new URL(req.url);if(req.method==="OPTIONS")return new Response(null,{headers:cors});
  if(u.pathname==="/health")return json({ok:true,service:"Aurora Engine Worker",mcp:"/mcp",requiresKV:true,requiresMcpToken:true});
+ if(u.pathname==="/models"&&req.method==="GET"){
+  const base=String(env.OMNIROUTE_BASE_URL||"").trim().replace(/\/+$/,"");
+  const apiKey=String(env.OMNIROUTE_API_KEY||"").trim();
+  const allowed=String(env.AI_ALLOWED_MODELS||"").split(",").map(v=>v.trim()).filter(Boolean);
+  if(!base||!apiKey)return json({error:"Configure OMNIROUTE_BASE_URL e OMNIROUTE_API_KEY no Worker."},503);
+  if(!allowed.length)return json({error:"Configure AI_ALLOWED_MODELS com os IDs de modelos autorizados."},503);
+  try{
+   const upstream=await fetch(base+"/models",{headers:{"Authorization":"Bearer "+apiKey,"Accept":"application/json"}});
+   const data=await upstream.json().catch(()=>({}));
+   if(!upstream.ok)return json({error:data.error?.message||data.message||"Não consegui consultar o catálogo OmniRoute."},502);
+   const models=(Array.isArray(data.data)?data.data:[]).filter(m=>m&&allowed.includes(String(m.id||""))).map(m=>({id:String(m.id),name:String(m.name||m.id)}));
+   return json({models,defaultModel:String(env.OMNIROUTE_MODEL||"")});
+  }catch(e){return json({error:e?.message||"Falha ao consultar modelos."},502)}
+ }
  if(u.pathname==="/chat"&&req.method==="POST"){
   const base=String(env.OMNIROUTE_BASE_URL||"").trim().replace(/\/+$/,"");
   const apiKey=String(env.OMNIROUTE_API_KEY||"").trim();
   const model=String(env.OMNIROUTE_MODEL||"").trim();
   const allowed=String(env.AI_ALLOWED_MODELS||"").split(",").map(v=>v.trim()).filter(Boolean);
-  if(!base||!apiKey||!model)return json({error:"Configure OMNIROUTE_BASE_URL, OMNIROUTE_API_KEY e OMNIROUTE_MODEL no Cloudflare Worker."},503);
-  if(!allowed.includes(model))return json({error:"Este modelo não está na lista AI_ALLOWED_MODELS. Adicione somente IDs que você confirmou como gratuitos no OmniRoute."},403);
+  if(!base||!apiKey)return json({error:"Configure OMNIROUTE_BASE_URL e OMNIROUTE_API_KEY no Cloudflare Worker."},503);
   try{
    const length=Number(req.headers.get("Content-Length")||0);if(length>24000)return json({error:"Pedido muito grande. Reduza a descrição ou o tamanho da cena."},413);
    const body=await req.json();const message=String(body.message||"").slice(0,7000);
    if(!message.trim())return json({error:"Escreva uma descrição para a Forja."},400);
    const project=body.project&&typeof body.project==="object"?body.project:{};
+   const selectedModel=String(body.model||model).trim();
+   if(!selectedModel||!allowed.includes(selectedModel))return json({error:"Escolha um modelo autorizado em AI_ALLOWED_MODELS no Worker."},403);
    const system = `Você é Aurora AI, assistente do Aurora Engine. Responda em português brasileiro e SOMENTE JSON válido no formato {"intent":"build|code|chat","reply":"...","actions":[],"code":"...","done":true}. Para conversa, intent=chat e actions=[] e code vazio. Para criação de cenas, intent=build e use ações: create_object com object {type rect|circle|text|star|character|sprite|platform|scenario|collision|house|tree|mountain|cloud|water|road|bridge|building,name,x,y,w,h,color,text}; create_3d_object com object {kind cube|sphere|terrain|floor|wall|door|window|column|stairs|building|character|tree|camera|light|house|castle|bridge|road|water|mountain|rock|lamp|bench|fountain|portal|forest|village|city|temple|room,name,x,y,z,width,height,depth,tilesX,tilesZ,side,sx,sy,sz,color}; update_object/delete_object/update_3d_object/delete_3d_object com name e changes. Máximo 20 ações por resposta. Para objetos 2D, omita x/y quando o usuário não definir posição para que o editor encontre um espaço livre; não use o centro como posição padrão. Para objetos 3D, omita x/z quando não houver posição definida; a engine distribui os objetos em áreas livres. Para pedido de script ou código, intent=code, actions=[], e escreva no campo code um JavaScript completo e executável usando apenas a API aurora: criar(tipo,x,y), cor(id,cor), personagem(x,y,cor), plataforma(x,y,largura,altura,cor), texto(texto,x,y,cor,tamanho), cenario(cor), item(x,y,cor), criar3D(tipo,x,y,z), criarChao3D(tilesX,tilesZ,x,z), criarParede3D(lado,comprimento,altura,x,z), mover3D(id,x,y,z), escala3D(id,x,y,z), girar3D(id,x,y,z), cor3D(id,cor), nomear(id,nome), limparCena(). Não use DOM, fetch, eval, bibliotecas externas ou APIs fora de aurora. Não use markdown fences. Preserve a cena; nunca apague tudo sem pedido explícito. Para paredes em 3D, informe side north|south|east|west para alinhar a borda e fechar cantos; para piso 5x5 use tilesX=5 e tilesZ=5. Não invente coordenadas 0,0 para todos os objetos: leia a cena e distribua objetos em posições livres. Não afirme que executou scripts; apenas gere código no campo code. Sempre inclua intent, reply, actions, code e done.`
-   const upstream=await fetch(base+"/chat/completions",{method:"POST",headers:{"Authorization":"Bearer "+apiKey,"Content-Type":"application/json","Accept":"application/json"},body:JSON.stringify({model,messages:[{role:"system",content:system},{role:"user",content:"Pedido: "+message+"\nCena: "+JSON.stringify(project).slice(0,12000)}],temperature:.25,max_tokens:3000})});
+   const upstream=await fetch(base+"/chat/completions",{method:"POST",headers:{"Authorization":"Bearer "+apiKey,"Content-Type":"application/json","Accept":"application/json"},body:JSON.stringify({model:selectedModel,messages:[{role:"system",content:system},{role:"user",content:"Pedido: "+message+"\nCena: "+JSON.stringify(project).slice(0,12000)}],temperature:.25,max_tokens:3000})});
    const d=await upstream.json().catch(()=>({}));if(!upstream.ok)return json({error:d.error?.message||d.message||"Erro no OmniRoute.",provider_status:upstream.status},502);
    const raw=d.choices?.[0]?.message?.content||"{}";let parsed;
    try{const clean=raw.trim().replace(/^\s*```(?:json)?/i,"").replace(/```\s*$/,"").trim();parsed=JSON.parse(clean)}catch{parsed={reply:raw,actions:[]}}
