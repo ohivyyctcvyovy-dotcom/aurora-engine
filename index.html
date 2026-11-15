@@ -451,7 +451,7 @@ function updateThreeCamera(){
  threeCamera.lookAt(target);
 }
 function build3dObject(o){
- if(o.kind==="uploaded"&&uploadedModelCache.has(o.assetId)){const model=uploadedModelCache.get(o.assetId).clone(true);model.position.set(o.x||0,o.y||0,o.z||0);model.scale.set(o.sx||1,o.sy||1,o.sz||1);model.rotation.set(THREE.MathUtils.degToRad(o.rx||0),THREE.MathUtils.degToRad(o.ry||0),THREE.MathUtils.degToRad(o.rz||0));return model}
+ if(o.kind==="uploaded"&&uploadedModelCache.has(o.assetId)){const model=uploadedModelCache.get(o.assetId).clone(true);if(o.textureAssetId&&uploadedTextureCache.has(o.textureAssetId)){const texture=uploadedTextureCache.get(o.textureAssetId);model.traverse(node=>{if(node.isMesh){const mats=Array.isArray(node.material)?node.material:[node.material];node.material=mats.map(m=>{const clone=m.clone();clone.map=texture;clone.needsUpdate=true;return clone})}})}model.position.set(o.x||0,o.y||0,o.z||0);model.scale.set(o.sx||1,o.sy||1,o.sz||1);model.rotation.set(THREE.MathUtils.degToRad(o.rx||0),THREE.MathUtils.degToRad(o.ry||0),THREE.MathUtils.degToRad(o.rz||0));return model}
  const prefab=buildAurora3DPrefab(THREE,o);if(prefab)return prefab;
  const group=new THREE.Group(),mat=new THREE.MeshStandardMaterial({color:o.color||0xd7ad58,metalness:.22,roughness:.55});
  const add=(geo,material=mat,x=0,y=0,z=0)=>{const m=new THREE.Mesh(geo,material);m.position.set(x,y,z);m.castShadow=true;m.receiveShadow=true;group.add(m);return m};
