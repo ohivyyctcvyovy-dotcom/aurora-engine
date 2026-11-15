@@ -545,7 +545,7 @@ $('runCode').onclick=()=>{
  try{
   stopCodeRuntime();let used3d=false;
   const api={
-   criar:(type,x=640,y=360)=>{if(!['rect','circle','star','text','character','sprite','platform','scenario','collision'].includes(type))throw Error('Tipo 2D inválido: '+type);add(type);const o=objects.find(v=>v.id===selected);o.x=clamp(x,0,1280,640);o.y=clamp(y,0,720,360);return o.id},
+   criar:(type,x=640,y=360)=>{if(!['rect','circle','star','text','character','sprite','platform','scenario','collision','house','tree','mountain','cloud','water','road','bridge','building'].includes(type))throw Error('Tipo 2D inválido: '+type);add(type);const o=objects.find(v=>v.id===selected);o.x=clamp(x,0,1280,640);o.y=clamp(y,0,720,360);return o.id},
    cor:(id,color)=>{const o=objects.find(v=>v.id===id);if(o&&validColor(color)){o.color=color;draw()}},
    personagem:(x=180,y=560,color='#d7ad58')=>{const id=api.criar('character',x,y);api.cor(id,color);return id},
    inimigo:(x=900,y=360,color='#b94f62')=>{const id=api.criar('character',x,y);const o=objects.find(v=>v.id===id);o.name='Inimigo';o.color=color;o.w=62;o.h=90;return id},
@@ -554,12 +554,16 @@ $('runCode').onclick=()=>{
    cenario:(color='#17243a')=>{const id=api.criar('scenario',640,360);api.cor(id,validColor(color)?color:'#17243a');return id},
    item:(x=500,y=500,color='#f1d18a')=>{const id=api.criar('circle',x,y),o=objects.find(v=>v.id===id);o.w=o.h=28;o.name='Item';api.cor(id,color);return id},
    mapa:(opts={})=>{const bg=api.cenario(opts.fundo||'#17243a'),floor=api.plataforma(640,690,opts.largura||1280,50,opts.chao||'#4d5260');if(opts.plataformas!==false){api.plataforma(330,520,260,24);api.plataforma(850,430,280,24);api.plataforma(640,300,190,24)}return {fundo:bg,chao:floor}},
-   limparCena:()=>{rememberUndo();objects=[];selected=null;refresh();draw()},
+   limparCena:()=>{rememberUndo();objects=[];objects3d=[];selected=null;selected3d=null;refresh();render3dObjects();draw()},
    pular:(id,h=80)=>{const o=objects.find(v=>v.id===id);if(o){const y=o.y;o.y-=clamp(h,1,400,80);draw();setTimeout(()=>{o.y=y;draw()},450)}},
-   criar3D:(kind='cube',x=0,y=0,z=0)=>{if(!['cube','sphere','terrain','building','character','tree','camera','light'].includes(kind))throw Error('Tipo 3D inválido');const id='obj3d-'+(++extra3dCount),colors={terrain:0x526b45,building:0x8996a5,character:0xd7ad58,tree:0x39734a,camera:0x536d91,light:0xffd58a},o={id,kind,name:kind,color:colors[kind]||0xd7ad58,x:clamp(x,-1000,1000,0),y:clamp(y,-1000,1000,0),z:clamp(z,-1000,1000,0),sx:1,sy:1,sz:1,rx:0,ry:0,rz:0};objects3d.push(o);used3d=true;return id},
+   criar3D:(kind='cube',x=0,y=0,z=0)=>{if(!['cube','sphere','terrain','floor','wall','door','window','column','stairs','building','character','tree','camera','light','house','castle','bridge','road','water','mountain','rock','lamp','bench','fountain','portal','forest','village','city','temple','room'].includes(kind))throw Error('Tipo 3D inválido: '+kind);add3d(kind);const o=objects3d[objects3d.length-1];o.x=clamp(x,-10000,10000,0);o.y=clamp(y,-10000,10000,0);o.z=clamp(z,-10000,10000,0);used3d=true;return o.id},
    mover3D:(id,x=0,y=0,z=0)=>{const o=objects3d.find(v=>v.id===id);if(o){o.x=clamp(x,-1000,1000,o.x);o.y=clamp(y,-1000,1000,o.y);o.z=clamp(z,-1000,1000,o.z);used3d=true}},
    escala3D:(id,x=1,y=1,z=1)=>{const o=objects3d.find(v=>v.id===id);if(o){o.sx=clamp(x,.1,10,1);o.sy=clamp(y,.1,10,1);o.sz=clamp(z,.1,10,1);used3d=true}},
    girar3D:(id,x=0,y=0,z=0)=>{const o=objects3d.find(v=>v.id===id);if(o){o.rx=clamp(x,-360,360,0);o.ry=clamp(y,-360,360,0);o.rz=clamp(z,-360,360,0);used3d=true}},
+   criarChao3D:(tilesX=5,tilesZ=5,x=0,z=0)=>{const tx=clamp(tilesX,1,30,5),tz=clamp(tilesZ,1,30,5);add3d('floor');const o=objects3d[objects3d.length-1];o.name='Chão '+tx+'x'+tz;o.width=tx*100;o.depth=tz*100;o.tilesX=tx;o.tilesZ=tz;o.x=clamp(x,-10000,10000,0);o.z=clamp(z,-10000,10000,0);o.y=0;o.sx=o.sy=o.sz=1;used3d=true;return o.id},
+   criarParede3D:(side='north',length=null,height=240,x=null,z=null)=>{const floor=[...objects3d].reverse().find(v=>v.kind==='floor'||v.kind==='terrain'),fw=floor?.width||(600*(floor?.sx||1)),fd=floor?.depth||(600*(floor?.sz||1)),fx=floor?.x||0,fz=floor?.z||0,edge=['north','south','east','west'].includes(side)?side:'north',h=clamp(height,20,2000,240),len=clamp(length??(edge==='north'||edge==='south'?fw:fd),20,10000,fw),thick=18;add3d('wall');const o=objects3d[objects3d.length-1];o.name='Parede '+edge;o.side=edge;o.height=h;o.y=h/2;o.depth=(edge==='north'||edge==='south')?thick:len;o.width=(edge==='north'||edge==='south')?len:thick;o.sx=o.width/130;o.sy=h/130;o.sz=o.depth/130;o.x=x??(edge==='west'?fx-fw/2:edge==='east'?fx+fw/2:fx);o.z=z??(edge==='north'?fz-fd/2:edge==='south'?fz+fd/2:fz);used3d=true;return o.id},
+   cor3D:(id,color)=>{const o=objects3d.find(v=>v.id===id);if(o&&validColor(color)){o.color=parseInt(color.slice(1),16);used3d=true}},
+   nomear:(id,name)=>{const o=objects3d.find(v=>v.id===id)||objects.find(v=>v.id===id);if(o)o.name=String(name).slice(0,60)},
    conectarJogo:g=>{
     if(!g?.player||!Array.isArray(g.enemies))return;stopCodeRuntime();codeRuntime=g;g.running=true;running=true;
     const keyMap={w:'w',a:'a',s:'s',d:'d',arrowup:'w',arrowleft:'a',arrowdown:'s',arrowright:'d'};
@@ -581,7 +585,7 @@ $('runCode').onclick=()=>{
   const source=$('gameCode').value,suffix='\n;if(typeof game!=="undefined" && game && game.player && Array.isArray(game.enemies)) aurora.conectarJogo(game);';
   new Function('aurora','canvas','ctx','"use strict";\n'+source+suffix)(api,canvas,ctx);
   refresh();draw();render3dObjects();if(used3d)switchMode('3D');else if(!codeRuntime)switchMode('2D');
-  $('codeStatus').textContent=codeRuntime?'Cena 2D criada! Mapa, personagem, inimigos, itens e HUD ativos. Use WASD ou toque na tela.':'Código executado. Objetos 2D: '+objects.length+' · Objetos 3D: '+objects3d.length+'.';
+  $('codeStatus').textContent=codeRuntime?'Script executando. Use WASD ou toque na tela.':'Script executado. Objetos 2D: '+objects.length+' · Objetos 3D: '+objects3d.length+'.';
  }catch(e){stopCodeRuntime();$('codeStatus').textContent='Erro: '+(e?.message||String(e));console.error('Aurora código:',e)}
 };
 const layout=document.querySelector('.layout');
