@@ -42,13 +42,13 @@ function installMobileComfort(){
  style.textContent="@media(max-width:900px){button,input,select,textarea{font-size:16px}button{min-height:42px;touch-action:manipulation}#aiPrompt{min-height:88px}#aiMessages{overscroll-behavior:contain}body{padding-bottom:env(safe-area-inset-bottom)}}@media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;transition-duration:.01ms!important}}";
  document.head.appendChild(style);
 }
-export function createAIClient({getEndpoint,getProject,onMessage,applyActions,onCode,onProgress}){
+export function createAIClient({getEndpoint,getModel,getProject,onMessage,applyActions,onCode,onProgress}){
  function progress(message){try{onProgress?.(message)}catch{}}
  function say(role,message){if(role!=="user")window.__auroraLastAssistantText=String(message||"");onMessage(role,message)}
  function showError(message){say("assistant","Não consegui conectar à Aurora: "+message+"\nConfira o endereço do Worker e tente novamente.");progress("")}
- async function request(endpoint,content,project){
+ async function request(endpoint,content,project,model){
   if(content.length>7000)content=content.slice(0,7000);
-  const response=await fetch(endpoint+"/chat",{method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json"},cache:"no-store",body:JSON.stringify({message:content,project:project||{}})});
+  const response=await fetch(endpoint+"/chat",{method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json"},cache:"no-store",body:JSON.stringify({message:content,project:project||{},model:String(model||'').trim()})});
   const data=await response.json().catch(()=>({}));
   if(!response.ok)throw new Error(data.error||"O servidor respondeu HTTP "+response.status+".");
   if(Array.isArray(data.actions)||typeof data.code==="string")return {raw:String(data.reply||"Resposta recebida."),parsed:{intent:String(data.intent||(data.actions?.length?"build":data.code?"code":"chat")),reply:String(data.reply||"Resposta recebida."),actions:Array.isArray(data.actions)?data.actions:[],code:String(data.code||""),done:data.done!==false}};
@@ -73,7 +73,7 @@ export function createAIClient({getEndpoint,getProject,onMessage,applyActions,on
    "Pedido: "+original.slice(0,1200),"Cena atual: "+JSON.stringify(project).slice(0,2500)
   ].join("\n");
   try{
-   let result=await request(endpoint,rules,project),parsed=result.parsed;
+   let result=await request(endpoint,rules,project,getModel?.()),parsed=result.parsed;
    if(!parsed){say("assistant","A API respondeu, mas o formato não foi reconhecido. Nenhuma alteração foi aplicada.");progress("");return {applied:false}}
    const intent=String(parsed.intent||(Array.isArray(parsed.actions)&&parsed.actions.length?"build":"chat")).toLowerCase();
    if(intent!=="build"){if(typeof parsed.code==="string"&&parsed.code.trim())onCode?.(parsed.code);say("assistant",String(parsed.reply||result.raw));progress("");return {applied:false,parsed}}
