@@ -65,6 +65,7 @@ header{height:58px;display:flex;align-items:center;gap:9px;padding:0 13px;border
 .asset-preview{height:76px;border-radius:8px;background:radial-gradient(circle,#3a3042,#15141a);display:grid;place-items:center;font-size:36px;color:var(--gold2)}
 .asset-card b{font-size:12px}.asset-card small{font-size:10px;color:var(--muted);flex:1}.asset-card button{font-size:11px}
 #assetLibrary .hint{margin:5px 0 10px}
+.asset-upload{padding:10px;margin:8px 0 12px;border:1px dashed #6e5933;border-radius:10px;background:#17151b}.uploaded-assets{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:8px;margin-top:8px}.uploaded-file{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px;border:1px solid var(--line);border-radius:8px;background:#0d0d12}.uploaded-file span{min-width:0;overflow-wrap:anywhere;font-size:11px}.uploaded-file button{flex:0 0 auto;font-size:10px;padding:6px 8px}
 
 body.preview-mode{overflow:hidden}
 body.preview-mode header,body.preview-mode .left,body.preview-mode .right,body.preview-mode .toolbar,body.preview-mode .foot,body.preview-mode #aiRestore{display:none!important}
@@ -384,7 +385,7 @@ document.querySelectorAll('[data-add]').forEach(b=>b.onclick=()=>{switchMode('2D
 function save(){localStorage.setItem('aurora-project',JSON.stringify(projectSnapshot()));$('status').textContent='Projeto salvo neste navegador'}$('saveBtn').onclick=save;
 $('exportBtn').onclick=()=>{let blob=new Blob([JSON.stringify(projectSnapshot(),null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='projeto-aurora.json';a.click();URL.revokeObjectURL(a.href)};
 $('importBtn').onclick=()=>$('file').click();$('file').onchange=async e=>{try{let d=JSON.parse(await e.target.files[0].text());objects=d.objects||[];objects.forEach(o=>{if(!Array.isArray(o.logic))o.logic=[]});if(Array.isArray(d.objects3d))objects3d=d.objects3d.map(o=>({...o,logic:Array.isArray(o.logic)?o.logic:[]}));selected=null;selected3d=objects3d[0]?.id||null;refresh();render3dObjects();switchMode(d.mode==='3D'?'3D':'2D')}catch{alert('Arquivo de projeto inválido')}};
-$('clearScene').onclick=()=>{if(confirm('Criar uma cena vazia?')){rememberUndo();objects=[];selected=null;refresh();draw()}};let THREE=null,GLTFLoader=null,uploadedModelCache=new Map(),threeRenderer=null,threeScene=null,threeCamera=null,threeMeshes=new Map(),threeReady=false,threeInitializing=false,threeFrame=0,transformControls=null;
+$('clearScene').onclick=()=>{if(confirm('Criar uma cena vazia?')){rememberUndo();objects=[];selected=null;refresh();draw()}};let THREE=null,GLTFLoader=null,uploadedModelCache=new Map(),uploadedTextureCache=new Map(),threeRenderer=null,threeScene=null,threeCamera=null,threeMeshes=new Map(),threeReady=false,threeInitializing=false,threeFrame=0,transformControls=null;
 async function initThree3D(){
  if(threeReady||threeInitializing)return;
  threeInitializing=true;
@@ -404,7 +405,7 @@ async function initThree3D(){
   const fill=new THREE.PointLight(0x8c78ff,700,1800);fill.position.set(-450,180,-350);threeScene.add(fill);
   const grid=new THREE.GridHelper(30000,600,0xb99a5e,0x51466b);grid.position.y=-1;threeScene.add(grid);
   const axes=new THREE.AxesHelper(1500);axes.position.set(0,-.95,0);threeScene.add(axes);
-  threeReady=true;threeInitializing=false;$('world3d').style.display='none';const threeStatus=$('threeStatus');if(threeStatus)threeStatus.style.display='none';
+  threeReady=true;threeInitializing=false;restoreUploadedModels();$('world3d').style.display='none';const threeStatus=$('threeStatus');if(threeStatus)threeStatus.style.display='none';
   syncThreeObjects();requestAnimationFrame(()=>{resizeThree3D();if(objects3d.length)focusScene3D()});
   threeRenderer.domElement.addEventListener('pointerdown',e=>{if(previewActive||transformControls?.dragging||transformControls?.axis)return;const rect=threeRenderer.domElement.getBoundingClientRect(),mouse=new THREE.Vector2((e.clientX-rect.left)/rect.width*2-1,-((e.clientY-rect.top)/rect.height)*2+1),ray=new THREE.Raycaster();ray.setFromCamera(mouse,threeCamera);const hits=ray.intersectObjects([...threeMeshes.values()],true);if(hits.length){let root=hits[0].object;while(root.parent&&!threeMeshes.has([...threeMeshes].find(([,m])=>m===root)?.[0]))root=root.parent;const entry=[...threeMeshes.entries()].find(([,m])=>m===root);if(entry)select3d(entry[0])}}); 
   // Controles reais de órbita diretamente no canvas WebGL (o canvas cobre o espaço 3D).
@@ -467,6 +468,7 @@ function build3dObject(o){
  else if(o.kind==='camera'){add(new THREE.BoxGeometry(58,38,32),new THREE.MeshStandardMaterial({color:0x39485c,metalness:.65}));add(new THREE.CylinderGeometry(13,13,16,20),new THREE.MeshStandardMaterial({color:0x91c9e8,metalness:.7}),0,0,25).rotation.x=Math.PI/2;const cone=new THREE.Mesh(new THREE.ConeGeometry(34,90,20,1,true),new THREE.MeshBasicMaterial({color:0x8ecbff,wireframe:true,transparent:true,opacity:.45}));cone.rotation.x=-Math.PI/2;cone.position.set(0,-42,65);group.add(cone)}
  else if(o.kind==='light'){add(new THREE.SphereGeometry(22,20,16),new THREE.MeshBasicMaterial({color:0xffe3a1}));const lamp=new THREE.PointLight(0xffd58a,180,420);lamp.position.set(0,0,0);group.add(lamp);const helper=new THREE.Mesh(new THREE.SphereGeometry(48,16,12),new THREE.MeshBasicMaterial({color:0xffd58a,wireframe:true,transparent:true,opacity:.2}));group.add(helper)}
  else add(new THREE.BoxGeometry(130,130,130));
+ if(o.textureAssetId&&uploadedTextureCache.has(o.textureAssetId)){const texture=uploadedTextureCache.get(o.textureAssetId);group.traverse(node=>{if(node.isMesh){const materials=Array.isArray(node.material)?node.material:[node.material];node.material=materials.map(m=>{const clone=m.clone();clone.map=texture;clone.needsUpdate=true;return clone});if(!Array.isArray(node.material))node.material=node.material[0]}})}
  group.position.set(o.x,o.y,o.z);group.scale.set(o.sx,o.sy,o.sz);group.rotation.set(THREE.MathUtils.degToRad(o.rx),THREE.MathUtils.degToRad(o.ry),THREE.MathUtils.degToRad(o.rz));return group;
 }
 function syncThreeObjects(){
@@ -747,8 +749,56 @@ function useLibraryAsset(id){
  }
  add(a.type);const o=objects.find(x=>x.id===selected);if(o){o.name=a.name;o.color=a.color;o.animated=!!a.animated;refresh();draw()}$('assetStatus').textContent=a.name+' adicionado à cena.';
 }
-$('libraryBtn').onclick=()=>{$('assetLibrary').classList.add('open');renderAssetLibrary()};
+$('libraryBtn').onclick=()=>{$('assetLibrary').classList.add('open');renderAssetLibrary();renderUploadedAssets()};
 $('assetClose').onclick=()=>$('assetLibrary').classList.remove('open');
+
+const ASSET_DB_NAME='aurora-engine-assets-v1';
+function openAssetDatabase(){return new Promise((resolve,reject)=>{if(!('indexedDB' in window)){reject(new Error('Este navegador não oferece armazenamento local de arquivos.'));return}const req=indexedDB.open(ASSET_DB_NAME,1);req.onupgradeneeded=()=>{if(!req.result.objectStoreNames.contains('assets'))req.result.createObjectStore('assets',{keyPath:'id'})};req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error||new Error('Não consegui abrir a biblioteca local.'))})}
+async function storeAssetFile(file){const db=await openAssetDatabase(),id=crypto.randomUUID();await new Promise((resolve,reject)=>{const tx=db.transaction('assets','readwrite');tx.objectStore('assets').put({id,name:file.name,type:file.type,size:file.size,blob:file,created:Date.now()});tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error)});db.close();return id}
+async function getStoredAsset(id){const db=await openAssetDatabase();const value=await new Promise((resolve,reject)=>{const req=db.transaction('assets','readonly').objectStore('assets').get(id);req.onsuccess=()=>resolve(req.result||null);req.onerror=()=>reject(req.error)});db.close();return value}
+async function getAllStoredAssets(){const db=await openAssetDatabase();const values=await new Promise((resolve,reject)=>{const req=db.transaction('assets','readonly').objectStore('assets').getAll();req.onsuccess=()=>resolve(req.result||[]);req.onerror=()=>reject(req.error)});db.close();return values}
+async function loadUploadedModel(record,addToScene=true){
+ if(!GLTFLoader||!threeReady)throw new Error('Aguarde o editor 3D terminar de carregar.');
+ return new Promise((resolve,reject)=>{const url=URL.createObjectURL(record.blob);new GLTFLoader().load(url,gltf=>{const model=gltf.scene;model.traverse(node=>{if(node.isMesh){node.castShadow=true;node.receiveShadow=true}});uploadedModelCache.set(record.id,model);if(addToScene){rememberUndo();const id='uploaded-'+record.id;objects3d.push({id,kind:'uploaded',assetId:record.id,name:record.name.replace(/\\.[^.]+$/,''),x:0,y:0,z:0,sx:1,sy:1,sz:1,rx:0,ry:0,rz:0});selected3d=id;switchMode('3D');render3dObjects();select3d(id);save()}URL.revokeObjectURL(url);resolve(true)},undefined,error=>{URL.revokeObjectURL(url);reject(error||new Error('Não consegui ler este GLB.'))})})
+}
+async function applyUploadedTexture(record){
+ if(!threeReady)throw new Error('Abra a cena 3D e aguarde carregar antes de aplicar uma textura.');
+ const target=objects3d.find(o=>o.id===selected3d);if(!target)throw new Error('Selecione um objeto 3D primeiro.');
+ const url=URL.createObjectURL(record.blob);
+ return new Promise((resolve,reject)=>{new THREE.TextureLoader().load(url,texture=>{texture.colorSpace=THREE.SRGBColorSpace;uploadedTextureCache.set(record.id,texture);rememberUndo();target.textureAssetId=record.id;render3dObjects();$('assetStatus').textContent='Textura aplicada em '+target.name+'.';URL.revokeObjectURL(url);save();resolve(true)},undefined,error=>{URL.revokeObjectURL(url);reject(error||new Error('Não consegui carregar a imagem.'))})})
+}
+async function useUploadedAsset(id){
+ try{
+  const record=await getStoredAsset(id);if(!record)throw new Error('Arquivo não encontrado na biblioteca.');
+  const ext=record.name.split('.').pop().toLowerCase();
+  if(ext==='glb'){await loadUploadedModel(record,true);$('assetStatus').textContent=record.name+' adicionado à cena 3D.';return}
+  if(['png','jpg','jpeg','webp'].includes(ext)){await applyUploadedTexture(record);return}
+  if(['mp3','wav','ogg'].includes(ext)){const url=URL.createObjectURL(record.blob),audio=new Audio(url);audio.onended=()=>URL.revokeObjectURL(url);await audio.play();$('assetStatus').textContent='Reproduzindo '+record.name;return}
+  throw new Error('Formato não suportado.');
+ }catch(error){$('assetStatus').textContent=error?.message||'Falha ao usar o arquivo.'}
+}
+async function renderUploadedAssets(){
+ const host=$('uploadedAssets');if(!host)return;host.innerHTML='';
+ try{const records=await getAllStoredAssets();if(!records.length){host.textContent='Nenhum arquivo enviado ainda.';return}
+  records.sort((a,b)=>a.name.localeCompare(b.name)).forEach(record=>{const row=document.createElement('div');row.className='uploaded-file';const name=document.createElement('span');name.textContent=record.name+' · '+(record.size/1024/1024).toFixed(1)+' MB';const use=document.createElement('button');const ext=record.name.split('.').pop().toLowerCase();use.textContent=ext==='glb'?'＋ Inserir':(['png','jpg','jpeg','webp'].includes(ext)?'Aplicar':'▶ Ouvir');use.onclick=()=>useUploadedAsset(record.id);row.append(name,use);host.append(row)})
+ }catch(error){host.textContent=error?.message||'Não consegui ler a biblioteca.'}
+}
+async function restoreUploadedModels(){
+ try{const records=await getAllStoredAssets(),byId=new Map(records.map(r=>[r.id,r]));for(const o of objects3d){if(o.kind==='uploaded'&&o.assetId&&byId.has(o.assetId))await loadUploadedModel(byId.get(o.assetId),false);if(o.textureAssetId&&byId.has(o.textureAssetId)){const rec=byId.get(o.textureAssetId),url=URL.createObjectURL(rec.blob);await new Promise(resolve=>new THREE.TextureLoader().load(url,texture=>{texture.colorSpace=THREE.SRGBColorSpace;uploadedTextureCache.set(rec.id,texture);URL.revokeObjectURL(url);resolve(true)},undefined,()=>{URL.revokeObjectURL(url);resolve(false)}))}}render3dObjects();renderUploadedAssets()}catch(error){console.warn('Restauração de arquivos Aurora:',error)}
+}
+$('assetUploadBtn').onclick=()=>$('assetUploadInput').click();
+$('assetUploadInput').onchange=async event=>{
+ const files=Array.from(event.target.files||[]);if(!files.length)return;
+ for(const file of files){
+  const ext=file.name.split('.').pop().toLowerCase();
+  if(!['glb','png','jpg','jpeg','webp','mp3','wav','ogg'].includes(ext)){$('assetStatus').textContent='Formato não suportado: '+file.name;continue}
+  if(file.size>40*1024*1024){$('assetStatus').textContent=file.name+' excede o limite de 40 MB.';continue}
+  try{await storeAssetFile(file);$('assetStatus').textContent='Arquivo salvo na biblioteca deste navegador: '+file.name}
+  catch(error){$('assetStatus').textContent=error?.message||'Falha ao salvar '+file.name}
+ }
+ event.target.value='';await renderUploadedAssets();
+};
+
 
 
 
@@ -1054,7 +1104,7 @@ if('serviceWorker' in navigator&&location.protocol.startsWith('http'))window.add
  <button id="fpsExit">Sair da partida</button><div id="fpsCross">＋</div>
  <div id="fpsObjective">Objetivo: procure o ponto marcado e pressione E</div>
  <div id="fpsControls"><button id="fpsUp">▲</button><button id="fpsInteract">AÇÃO · E</button><button id="fpsDown">▼</button><button id="fpsShoot">DISPARAR</button><button id="fpsFloor">SUBIR</button></div>
-</div><div id="assetLibrary" aria-hidden="true"><div class="asset-shell"><div class="asset-head"><div><h2>Biblioteca de Recursos</h2><div class="hint">Recursos locais e procedurais para montar suas cenas.</div></div><button id="assetClose">Fechar ×</button></div><div class="asset-tabs" id="assetTabs"></div><div id="assetGrid" class="asset-grid"></div><div class="hint" id="assetStatus" style="margin-top:12px">Escolha um recurso para adicionar, aplicar ou ouvir.</div></div></div><div id="previewBar"><strong>PRÉ-VISUALIZAÇÃO</strong><span id="previewInfo">Teste do projeto atual</span><button id="runtimeCameraFirst" type="button">1ª pessoa</button><button id="runtimeCameraThird" type="button" class="active">3ª pessoa</button><button id="stopPreview" class="primary">■ Voltar ao editor</button></div><div id="logicEditor"><div class="logic-shell">
+</div><div id="assetLibrary" aria-hidden="true"><div class="asset-shell"><div class="asset-head"><div><h2>Biblioteca de Recursos</h2><div class="hint">Recursos locais e procedurais para montar suas cenas.</div></div><button id="assetClose">Fechar ×</button></div><div class="asset-tabs" id="assetTabs"></div><div class="asset-upload"><button id="assetUploadBtn" type="button">⬆ Enviar meus arquivos</button><input id="assetUploadInput" type="file" multiple accept=".glb,.png,.jpg,.jpeg,.webp,.mp3,.wav,.ogg" hidden><div class="hint">Modelos 3D: GLB · Texturas: PNG/JPG/WEBP · Áudio: MP3/WAV/OGG. Selecione vários arquivos do seu pack de uma vez.</div><div id="uploadedAssets" class="uploaded-assets"></div></div><div id="assetGrid" class="asset-grid"></div><div class="hint" id="assetStatus" style="margin-top:12px">Escolha um recurso para adicionar, aplicar ou ouvir.</div></div></div><div id="previewBar"><strong>PRÉ-VISUALIZAÇÃO</strong><span id="previewInfo">Teste do projeto atual</span><button id="runtimeCameraFirst" type="button">1ª pessoa</button><button id="runtimeCameraThird" type="button" class="active">3ª pessoa</button><button id="stopPreview" class="primary">■ Voltar ao editor</button></div><div id="logicEditor"><div class="logic-shell">
  <div class="logic-head"><div><h2>◇ Sistema de lógica visual</h2><div class="hint">Monte regras sem escrever código. Selecione um objeto e adicione blocos.</div></div><div style="display:flex;gap:7px;flex-wrap:wrap"><button id="backTo3dFromLogic" class="primary" type="button">← Voltar à cena 3D</button><button id="logicClose">Fechar ×</button></div></div>
  <div class="logic-form">
   <label>Objeto da cena<select id="logicObject"></select></label>
