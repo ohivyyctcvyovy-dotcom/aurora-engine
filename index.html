@@ -278,7 +278,7 @@ const aiEndpointInput=$('aiEndpoint');
 aiEndpointInput.value=localStorage.getItem('aurora-engine-ai-endpoint')||AI_ENDPOINT_DEFAULT;
 aiEndpointInput.addEventListener('change',()=>localStorage.setItem('aurora-engine-ai-endpoint',aiEndpointInput.value.trim()));
 let is3d=true,rotX=-22,rotY=-28,zoom3d=1,drag3d=null,extra3dCount=0,selected3d=null,objects3d=[];let objects=[],selected=null,grid=true,running=false,drag=null,undoStack=[];
-const ai=createAIClient({getEndpoint:()=>$('aiEndpoint').value.trim(),getProject:()=>projectSnapshot(),applyActions:applyAIActions,onProgress:message=>{const status=$('forjaStatus');if(status)status.textContent=message||'Forja pronta.'},onCode:code=>{$('gameCode').value=code;$('codeWorkspace').hidden=false;canvas.hidden=is3d;$('viewport3d').hidden=!is3d;$('codeStatus').textContent='Código gerado pela Aurora. Revise antes de executar.'},onMessage:(role,text)=>{const d=document.createElement('div');d.className='bubble '+(role==='user'?'user':'');d.textContent=text;$('aiMessages').append(d);$('aiMessages').scrollTop=$('aiMessages').scrollHeight}});
+const ai=createAIClient({getEndpoint:()=>$('aiEndpoint').value.trim(),getProject:()=>projectSnapshot(),applyActions:applyAIActions,onProgress:message=>{const status=$('forjaStatus');if(status)status.textContent=message||'Forja pronta.'},onCode:code=>{$('gameCode').value=code;openCodeWorkspace();$('codeStatus').textContent='Script gerado pela Aurora. Toque em “Executar código” para testar. Erros serão mostrados aqui.'},onMessage:(role,text)=>{const d=document.createElement('div');d.className='bubble '+(role==='user'?'user':'');d.textContent=text;$('aiMessages').append(d);$('aiMessages').scrollTop=$('aiMessages').scrollHeight}});
 const projectSnapshot=()=>({name:'Meu jogo',engine:'Aurora Engine',mode:is3d?'3D':'2D',width:canvas.width,height:canvas.height,objects:objects.map(o=>({...o})),objects3d:objects3d.map(o=>({...o}))});
 function rememberUndo(){undoStack.push(JSON.stringify({objects,objects3d}));if(undoStack.length>30)undoStack.shift();$('undoBtn').disabled=false}
 function undo(){const old=undoStack.pop();if(!old)return;const snap=JSON.parse(old);if(Array.isArray(snap)){objects=snap}else{objects=Array.isArray(snap.objects)?snap.objects:[];objects3d=Array.isArray(snap.objects3d)?snap.objects3d:[]}selected=null;selected3d=null;refresh();draw();render3dObjects();$('status').textContent='Alteração desfeita'}
@@ -286,8 +286,8 @@ $('undoBtn').onclick=undo;
 function applyAIActions(actions){
  if(!Array.isArray(actions)||actions.length>60)throw new Error('Lista de ações inválida ou muito grande.');
  const allowedTypes=['rect','circle','text','star','character','sprite','platform','scenario','collision','house','tree','mountain','cloud','water','road','bridge','building'];
- const allowed3D=['cube','sphere','terrain','building','character','tree','camera','light','house','castle','bridge','road','water','mountain','rock','lamp','bench','fountain','portal','forest','village','city','temple','room'];
- const kindAliases={wall:'cube',floor:'cube',door:'cube',table:'cube',desk:'cube',chair:'cube',window:'cube',column:'cube',pillar:'cube',stairs:'cube',step:'cube',platform:'cube',fence:'cube',box:'cube',block:'cube',ground:'terrain'};
+ const allowed3D=['cube','sphere','terrain','floor','wall','door','window','column','stairs','building','character','tree','camera','light','house','castle','bridge','road','water','mountain','rock','lamp','bench','fountain','portal','forest','village','city','temple','room'];
+ const kindAliases={table:'cube',desk:'cube',chair:'cube',pillar:'column',step:'stairs',platform:'cube',fence:'wall',box:'cube',block:'cube',ground:'floor'};
  let changed=false,targetMode=null;
  if(actions.length)rememberUndo();
  const actionAliases={create_2d_object:'create_object',add_object:'create_object',spawn_object:'create_object',create3d:'create_3d_object',create_3d:'create_3d_object',add_3d_object:'create_3d_object',spawn_3d_object:'create_3d_object'};
@@ -431,11 +431,17 @@ function updateThreeCamera(){
  threeCamera.lookAt(target);
 }
 function build3dObject(o){
+ if(o.kind==="uploaded"&&uploadedModelCache.has(o.assetId)){const model=uploadedModelCache.get(o.assetId).clone(true);model.position.set(o.x||0,o.y||0,o.z||0);model.scale.set(o.sx||1,o.sy||1,o.sz||1);model.rotation.set(THREE.MathUtils.degToRad(o.rx||0),THREE.MathUtils.degToRad(o.ry||0),THREE.MathUtils.degToRad(o.rz||0));return model}
  const prefab=buildAurora3DPrefab(THREE,o);if(prefab)return prefab;
  const group=new THREE.Group(),mat=new THREE.MeshStandardMaterial({color:o.color||0xd7ad58,metalness:.22,roughness:.55});
  const add=(geo,material=mat,x=0,y=0,z=0)=>{const m=new THREE.Mesh(geo,material);m.position.set(x,y,z);m.castShadow=true;m.receiveShadow=true;group.add(m);return m};
  if(o.kind==='sphere')add(new THREE.SphereGeometry(55,32,20));
- else if(o.kind==='terrain'){const groundMat=new THREE.MeshStandardMaterial({color:o.color||0x526b45,roughness:1});add(new THREE.PlaneGeometry(600,600,32,32),groundMat).rotation.x=-Math.PI/2;group.position.y=-2}
+ else if(o.kind==='terrain'||o.kind==='floor'){const groundMat=new THREE.MeshStandardMaterial({color:o.color||0x526b45,roughness:1});add(new THREE.PlaneGeometry(o.width||600,o.depth||600,1,1),groundMat).rotation.x=-Math.PI/2}
+ else if(o.kind==='wall'){add(new THREE.BoxGeometry(o.width||130,o.height||220,o.depth||18),mat)}
+ else if(o.kind==='door'){add(new THREE.BoxGeometry(o.width||90,o.height||210,o.depth||12),new THREE.MeshStandardMaterial({color:o.color||0x79543a,metalness:.15,roughness:.7}));add(new THREE.SphereGeometry(4,12,8),new THREE.MeshStandardMaterial({color:0xd7ad58,metalness:.7}), (o.width||90)*.32,0,(o.depth||12)*.55)}
+ else if(o.kind==='window'){const frame=new THREE.MeshStandardMaterial({color:0x6d7785,metalness:.65,roughness:.35}),glass=new THREE.MeshStandardMaterial({color:0x7dc9e8,metalness:.25,roughness:.12,transparent:true,opacity:.48});add(new THREE.BoxGeometry(o.width||120,o.height||90,o.depth||10),glass);for(const x of [-(o.width||120)/2,(o.width||120)/2])add(new THREE.BoxGeometry(5,(o.height||90)+8,(o.depth||10)+4),frame,x,0,0);for(const y of [-(o.height||90)/2,(o.height||90)/2])add(new THREE.BoxGeometry((o.width||120)+8,5,(o.depth||10)+4),frame,0,y,0)}
+ else if(o.kind==='column')add(new THREE.CylinderGeometry(o.width||18,o.width||22,o.height||220,16));
+ else if(o.kind==='stairs'){const count=8,stepW=o.width||220,stepH=(o.height||120)/count,stepD=(o.depth||180)/count;for(let i=0;i<count;i++)add(new THREE.BoxGeometry(stepW,stepH*(i+1),stepD),mat,0,stepH*(i+1)/2,-(o.depth||180)/2+stepD*(i+.5))}
  else if(o.kind==='building'){add(new THREE.BoxGeometry(150,190,130));for(let y=-65;y<=65;y+=55)for(let x of [-42,0,42])add(new THREE.BoxGeometry(22,28,3),new THREE.MeshStandardMaterial({color:0x9bc7d9,metalness:.35,roughness:.2}),x,y,66)}
  else if(o.kind==='character'){add(new THREE.CylinderGeometry(20,24,62,16),mat,0,0,0);add(new THREE.SphereGeometry(20,20,16),new THREE.MeshStandardMaterial({color:0xf1d18a}),0,48,0);add(new THREE.BoxGeometry(58,18,24),mat,0,-12,0);add(new THREE.CylinderGeometry(8,9,42,12),mat,-16,-55,0);add(new THREE.CylinderGeometry(8,9,42,12),mat,16,-55,0)}
  else if(o.kind==='tree'){add(new THREE.CylinderGeometry(9,13,62,10),new THREE.MeshStandardMaterial({color:0x795333}),0,0,0);add(new THREE.ConeGeometry(48,100,12),new THREE.MeshStandardMaterial({color:0x39734a}),0,70,0);add(new THREE.ConeGeometry(36,78,12),new THREE.MeshStandardMaterial({color:0x4c9158}),0,115,0)}
@@ -454,7 +460,7 @@ function syncThreeObjects(){
  if(selected3d&&transformControls){const selectedMesh=threeMeshes.get(selected3d);if(selectedMesh)transformControls.attach(selectedMesh)}
 }
 function update3d(){updateThreeCamera();const world=$('world3d');if(world)world.style.transform='translate3d(-50%,-50%,0) rotateX('+rotX+'deg) rotateY('+rotY+'deg) scale('+zoom3d+')'}
-function add3d(kind){const id='obj3d-'+(++extra3dCount),labels={cube:'Cubo',sphere:'Esfera',terrain:'Terreno',building:'Prédio',character:'Personagem',tree:'Árvore',camera:'Câmera',light:'Luz',house:'Casa',castle:'Castelo',bridge:'Ponte',road:'Estrada',water:'Água',mountain:'Montanha',rock:'Rocha',lamp:'Poste de luz',bench:'Banco',fountain:'Fonte',portal:'Portal',forest:'Floresta',village:'Vila',city:'Cidade',temple:'Templo',room:'Interior'},colors={terrain:0x526b45,building:0x8996a5,character:0xd7ad58,tree:0x39734a,camera:0x536d91,light:0xffd58a,house:0xc99a62,castle:0xb4a38c,bridge:0x806348,road:0x34363d,water:0x287fa8,mountain:0x78849a,rock:0x77736d,forest:0x39734a,village:0x657b4b,city:0x8293a4,temple:0xe1d7bd,room:0x8d9aa4},o={id,kind,name:labels[kind]||'Objeto 3D',color:colors[kind]||0xd7ad58,x:kind==='terrain'?0:extra3dCount*24,y:0,z:0,sx:1,sy:1,sz:1,rx:0,ry:0,rz:0};objects3d.push(o);render3dObjects();select3d(id)}
+function add3d(kind){const id='obj3d-'+(++extra3dCount),labels={cube:'Cubo',sphere:'Esfera',terrain:'Terreno',floor:'Chão',wall:'Parede',door:'Porta',window:'Janela',column:'Coluna',stairs:'Escada',building:'Prédio',character:'Personagem',tree:'Árvore',camera:'Câmera',light:'Luz',house:'Casa',castle:'Castelo',bridge:'Ponte',road:'Estrada',water:'Água',mountain:'Montanha',rock:'Rocha',lamp:'Poste de luz',bench:'Banco',fountain:'Fonte',portal:'Portal',forest:'Floresta',village:'Vila',city:'Cidade',temple:'Templo',room:'Interior'},colors={terrain:0x526b45,building:0x8996a5,character:0xd7ad58,tree:0x39734a,camera:0x536d91,light:0xffd58a,house:0xc99a62,castle:0xb4a38c,bridge:0x806348,road:0x34363d,water:0x287fa8,mountain:0x78849a,rock:0x77736d,forest:0x39734a,village:0x657b4b,city:0x8293a4,temple:0xe1d7bd,room:0x8d9aa4},o={id,kind,name:labels[kind]||'Objeto 3D',color:colors[kind]||0xd7ad58,x:kind==='terrain'?0:extra3dCount*24,y:0,z:0,sx:1,sy:1,sz:1,rx:0,ry:0,rz:0};objects3d.push(o);render3dObjects();select3d(id)}
 function render3dObjects(){if(!threeReady){$('foot').textContent='Carregando motor 3D…';return}syncThreeObjects();$('objects3d').innerHTML='';$('foot').textContent='Editor 3D WebGL · '+objects3d.length+' objetos'}
 function select3d(id){selected3d=id;render3dObjects();const o=objects3d.find(v=>v.id===id),i=$('inspector');i.innerHTML='';if(!o){if(transformControls)transformControls.detach();i.textContent='Selecione um bloco 3D.';return}const selectedMesh=threeMeshes.get(id);if(transformControls&&selectedMesh){transformControls.setMode('translate');transformControls.attach(selectedMesh)}for(const [label,key] of [['Posição X','x'],['Posição Y','y'],['Profundidade Z','z'],['Escala X','sx'],['Escala Y','sy'],['Escala Z','sz'],['Rotação X','rx'],['Rotação Y','ry'],['Rotação Z','rz']]){const row=document.createElement('div');row.className='field';const l=document.createElement('label');l.textContent=label;const input=document.createElement('input');input.type='number';input.step=key.startsWith('s')?'.1':'1';input.value=o[key];input.dataset.prop=key;input.onchange=()=>{o[key]=Number(input.value)||0;render3dObjects()};row.append(l,input);i.append(row)}const modes=document.createElement('div');modes.style.cssText='display:flex;gap:6px;flex-wrap:wrap;margin:8px 0';[['Mover','translate'],['Girar','rotate'],['Escalar','scale']].forEach(([label,mode])=>{const b=document.createElement('button');b.textContent=label;b.onclick=()=>{transformControls?.setMode(mode);if(selectedMesh)transformControls?.attach(selectedMesh)};modes.append(b)});i.append(modes);const flat=document.createElement('button');flat.textContent='Achatar bloco';flat.onclick=()=>{o.sy=.25;select3d(id)};const stretch=document.createElement('button');stretch.textContent='Esticar bloco';stretch.onclick=()=>{o.sx=2;o.sy=1;o.sz=1;select3d(id)};const del=document.createElement('button');del.textContent='Excluir bloco';del.onclick=()=>{objects3d=objects3d.filter(v=>v.id!==id);select3d(null)};const colorRow=document.createElement('div');colorRow.className='field';const colorLabel=document.createElement('label');colorLabel.textContent='Material / cor';const colorInput=document.createElement('input');colorInput.type='color';colorInput.value='#'+Number(o.color||0xd7ad58).toString(16).padStart(6,'0').slice(-6);colorInput.oninput=()=>{o.color=parseInt(colorInput.value.slice(1),16);render3dObjects()};colorRow.append(colorLabel,colorInput);i.append(colorRow,flat,stretch,del)}
 /* Movimento preciso do objeto selecionado pelos direcionais X/Y/Z. */
@@ -507,9 +513,12 @@ $('zoomIn3d').onclick=()=>setZoom3d(zoom3d+.15);$('zoomOut3d').onclick=()=>setZo
 $('focus3d').onclick=()=>{const o=objects3d.find(v=>v.id===selected3d);if(!o){$('foot').textContent='Selecione um bloco primeiro.';return}setZoom3d(1.8);rotX=-22;rotY=-28;update3d();$('foot').textContent='Foco no bloco selecionado'};
 $('fullscreen3d').onclick=async()=>{try{if(!document.fullscreenElement)await $('.stage').requestFullscreen();else await document.exitFullscreen()}catch{$('foot').textContent='Tela cheia indisponível neste navegador'}};
 document.addEventListener('fullscreenchange',()=>{$('fullscreen3d').textContent=document.fullscreenElement?'Sair da tela cheia':'Tela cheia'});
-$('codeBtn').onclick=()=>{$('codeWorkspace').hidden=false;canvas.hidden=true;$('viewport3d').hidden=true};
-$('closeCode').onclick=()=>{$('codeWorkspace').hidden=true;canvas.hidden=is3d;$('viewport3d').hidden=!is3d;if(!is3d)draw()};
-$('backTo3dFromCode').onclick=()=>{stopCodeRuntime();$('codeWorkspace').hidden=true;switchMode('3D');$('foot').textContent='Você voltou para a cena 3D.'};
+let codeReturnMode="3D";
+function openCodeWorkspace(){codeReturnMode=is3d?"3D":"2D";$('codeWorkspace').hidden=false;canvas.hidden=true;$('viewport3d').hidden=true;$('backTo3dFromCode').textContent="← Voltar à cena "+codeReturnMode;}
+function leaveCodeWorkspace(){stopCodeRuntime();$('codeWorkspace').hidden=true;switchMode(codeReturnMode);$('foot').textContent="Você voltou para a cena "+codeReturnMode+". ";}
+$('codeBtn').onclick=openCodeWorkspace;
+$('closeCode').onclick=leaveCodeWorkspace;
+$('backTo3dFromCode').onclick=leaveCodeWorkspace;
 $('resetCode').onclick=()=>{$('gameCode').value='const bloco = aurora.criar("rect", 640, 360);\naurora.cor(bloco, "#d7ad58");\naurora.pular(bloco, 90);'};
 let codeFrame=0,codeRuntime=null,codeKeys={},codeDown=null,codeMove=null,codeUp=null,codeKeyDown=null,codeKeyUp=null;
 function stopCodeRuntime(){if(codeFrame)cancelAnimationFrame(codeFrame);codeFrame=0;codeRuntime=null;running=false;if(codeKeyDown)window.removeEventListener('keydown',codeKeyDown);if(codeKeyUp)window.removeEventListener('keyup',codeKeyUp);if(codeDown)canvas.removeEventListener('pointerdown',codeDown);if(codeMove)canvas.removeEventListener('pointermove',codeMove);if(codeUp)canvas.removeEventListener('pointerup',codeUp);codeKeyDown=codeKeyUp=codeDown=codeMove=codeUp=null;codeKeys={}}
@@ -949,11 +958,10 @@ function nextRuntimeLevel(){
 }
 function startGamePreview(){
  if(fpsState.active){$('fpsObjective').textContent='Feche a prévia atual antes de testar seu projeto.';return}
+ let actor=is3d?objects3d.find(o=>o.kind==='character'):objects.find(o=>o.type==='character'||o.type==='sprite');
+ if(!actor){$('status').textContent='Para testar, adicione um personagem à cena primeiro. O editor não moverá mais o primeiro objeto como substituto.';return}
  previewActive=true;running=true;logicPreview=true;
  document.body.classList.add('preview-mode');$('previewBar').classList.add('visible');
- const list=is3d?objects3d:objects;
- let actor=is3d?objects3d.find(o=>o.kind==='character'):objects.find(o=>o.type==='character'||o.type==='sprite');
- if(!actor)actor=list.find(Boolean);
  if(is3d&&!threeReady){
   initThree3D().then(()=>startGamePreviewReady(actor));
  }else startGamePreviewReady(actor);
@@ -976,7 +984,7 @@ function startGamePreviewReady(actor){
 
 function stopGamePreview(){
  if(!previewActive)return;previewActive=false;running=false;logicPreview=false;
- if(is3d){const host=$('three3d');if(host)host.style.pointerEvents='auto';const actor=objects3d.find(o=>o.id===gameRuntime?.actorId);const player=actor&&threeMeshes.get(actor.id);if(player)player.visible=true;if(transformControls){transformControls.enabled=true;const selectedMesh=threeMeshes.get(selected3d);if(selectedMesh)transformControls.attach(selectedMesh)}}
+ if(is3d){const host=$('three3d');if(host)host.style.pointerEvents='auto';const space=$('space3d');if(space)space.style.pointerEvents='auto';const gl=threeRenderer?.domElement;if(gl)gl.style.pointerEvents='auto';const actor=objects3d.find(o=>o.id===gameRuntime?.actorId);const player=actor&&threeMeshes.get(actor.id);if(player)player.visible=true;if(transformControls){transformControls.enabled=true;const selectedMesh=threeMeshes.get(selected3d);if(selectedMesh)transformControls.attach(selectedMesh)}}
  resetJoystick();gameKeys[' ']=false;
  gameRuntime=null;runtimeRoot.classList.remove('active');$('gameResult').classList.remove('show');
  document.body.classList.remove('preview-mode');$('previewBar').classList.remove('visible');
