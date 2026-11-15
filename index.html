@@ -335,8 +335,26 @@ function applyAIActions(actions){
   }else if(a.type==='create_3d_object'){
    const p=a.object||a;const requestedKind=String(p.kind||p.type||p.objectType||'').toLowerCase();const kind=allowed3D.includes(requestedKind)?requestedKind:(kindAliases[requestedKind]||'');if(!kind)continue;
    const rawColor=p.color;const color=typeof rawColor==='string'&&/^#[0-9a-fA-F]{6}$/.test(rawColor)?parseInt(rawColor.slice(1),16):(Number.isFinite(Number(rawColor))?Math.max(0,Math.min(0xffffff,Number(rawColor))):0xd7ad58);
-   objects3d.push({id:'ai3d-'+crypto.randomUUID(),kind,name:String(p.name||requestedKind||'Objeto 3D IA').slice(0,60),color,x:clamp(p.x,-10000,10000,0),y:clamp(p.y,-10000,10000,0),z:clamp(p.z,-10000,10000,0),sx:clamp(p.sx??(p.width!=null?Number(p.width)/130:1),.05,100,1),sy:clamp(p.sy??(p.height!=null?Number(p.height)/130:1),.05,100,1),sz:clamp(p.sz??(p.depth!=null?Number(p.depth)/130:1),.05,100,1),rx:clamp(p.rx,-360,360,0),ry:clamp(p.ry,-360,360,0),rz:clamp(p.rz,-360,360,0)});
-   extra3dCount++;targetMode='3D';changed=true;
+   const floor=[...objects3d].reverse().find(o=>o.kind==='floor'||o.kind==='terrain'),floorX=floor?.x||0,floorZ=floor?.z||0,floorW=floor?.width||(600*(floor?.sx||1)),floorD=floor?.depth||(600*(floor?.sz||1));
+   let x=Number.isFinite(Number(p.x))?Number(p.x):null,z=Number.isFinite(Number(p.z))?Number(p.z):null,y=Number.isFinite(Number(p.y))?Number(p.y):0;
+   const wallSide=String(p.side||'').toLowerCase();let width=Number(p.width)||130,height=Number(p.height)||130,depth=Number(p.depth)||130,side=wallSide;
+   if(kind==='floor'||kind==='terrain'){width=clamp(p.width??(Number(p.tilesX)||6)*100,20,10000,600);depth=clamp(p.depth??(Number(p.tilesZ)||6)*100,20,10000,600);x=x??0;z=z??0;y=Number.isFinite(Number(p.y))?Number(p.y):0}
+   else if(kind==='wall'){
+    const usedSides=objects3d.filter(o=>o.kind==='wall'&&o.name?.startsWith('Parede ')).map(o=>o.side);
+    if(!['north','south','east','west'].includes(side))side=['north','east','south','west'].find(s=>!usedSides.includes(s))||'north';
+    height=clamp(p.height,20,2000,240);const thickness=clamp(p.thickness??p.depth,4,200,18);
+    if(side==='north'||side==='south'){width=clamp(p.length??p.width??floorW,20,10000,floorW);depth=thickness;x=x??floorX;z=z??(floorZ+(side==='north'?-1:1)*floorD/2);}
+    else{width=thickness;depth=clamp(p.length??p.depth??floorD,20,10000,floorD);x=x??(floorX+(side==='west'?-1:1)*floorW/2);z=z??floorZ;}
+    y=Number.isFinite(Number(p.y))?Number(p.y):height/2;
+   }else{
+    if(x===null||z===null||(x===0&&z===0&&!p.position&&!p.anchor)){
+     const step=150,margin=90,minX=floorX-floorW/2+margin,minZ=floorZ-floorD/2+margin,maxX=floorX+floorW/2-margin,maxZ=floorZ+floorD/2-margin;let spot=null;
+     for(let row=0;row<12&&!spot;row++)for(let col=0;col<12&&!spot;col++){const cx=minX+col*step,cz=minZ+row*step;if(cx>maxX||cz>maxZ)continue;const busy=objects3d.some(o=>!['floor','terrain','wall'].includes(o.kind)&&Math.hypot((o.x||0)-cx,(o.z||0)-cz)<105);if(!busy)spot={x:cx,z:cz}}
+     if(spot){x=spot.x;z=spot.z}else{x=x??floorX;z=z??floorZ}
+    }
+   }
+   const id='ai3d-'+crypto.randomUUID();const ob={id,kind,name:String(p.name||(kind==='wall'?'Parede '+side:requestedKind||'Objeto 3D IA')).slice(0,60),color,x:x??floorX,y,z:z??floorZ,width,height,depth,side,tilesX:p.tilesX,tilesZ:p.tilesZ,sx:clamp(p.sx??(kind==='wall'?width/130:kind==='floor'||kind==='terrain'?1:width/130),.05,100,1),sy:clamp(p.sy??(kind==='wall'?height/130:kind==='floor'||kind==='terrain'?1:height/130),.05,100,1),sz:clamp(p.sz??(kind==='wall'?depth/130:kind==='floor'||kind==='terrain'?1:depth/130),.05,100,1),rx:clamp(p.rx,-360,360,0),ry:clamp(p.ry,-360,360,0),rz:clamp(p.rz,-360,360,0)};
+   objects3d.push(ob);extra3dCount++;targetMode='3D';changed=true;
   }else if(a.type==='update_3d_object'){
    const o=objects3d.find(v=>(a.id&&v.id===a.id)||(a.name&&v.name===a.name));if(!o)continue;const c=a.changes||{};
    if(typeof c.name==='string')o.name=c.name.slice(0,60);
@@ -366,13 +384,14 @@ document.querySelectorAll('[data-add]').forEach(b=>b.onclick=()=>{switchMode('2D
 function save(){localStorage.setItem('aurora-project',JSON.stringify(projectSnapshot()));$('status').textContent='Projeto salvo neste navegador'}$('saveBtn').onclick=save;
 $('exportBtn').onclick=()=>{let blob=new Blob([JSON.stringify(projectSnapshot(),null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='projeto-aurora.json';a.click();URL.revokeObjectURL(a.href)};
 $('importBtn').onclick=()=>$('file').click();$('file').onchange=async e=>{try{let d=JSON.parse(await e.target.files[0].text());objects=d.objects||[];objects.forEach(o=>{if(!Array.isArray(o.logic))o.logic=[]});if(Array.isArray(d.objects3d))objects3d=d.objects3d.map(o=>({...o,logic:Array.isArray(o.logic)?o.logic:[]}));selected=null;selected3d=objects3d[0]?.id||null;refresh();render3dObjects();switchMode(d.mode==='3D'?'3D':'2D')}catch{alert('Arquivo de projeto inválido')}};
-$('clearScene').onclick=()=>{if(confirm('Criar uma cena vazia?')){rememberUndo();objects=[];selected=null;refresh();draw()}};let THREE=null,threeRenderer=null,threeScene=null,threeCamera=null,threeMeshes=new Map(),threeReady=false,threeInitializing=false,threeFrame=0,transformControls=null;
+$('clearScene').onclick=()=>{if(confirm('Criar uma cena vazia?')){rememberUndo();objects=[];selected=null;refresh();draw()}};let THREE=null,GLTFLoader=null,uploadedModelCache=new Map(),threeRenderer=null,threeScene=null,threeCamera=null,threeMeshes=new Map(),threeReady=false,threeInitializing=false,threeFrame=0,transformControls=null;
 async function initThree3D(){
  if(threeReady||threeInitializing)return;
  threeInitializing=true;
  try{
   THREE=await import('https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js');
   const {TransformControls}=await import('https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/controls/TransformControls.js');
+  const gltfModule=await import('https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/loaders/GLTFLoader.js');GLTFLoader=gltfModule.GLTFLoader;
   const host=$('three3d');if(!host||threeReady)return;
   threeScene=new THREE.Scene();threeScene.background=new THREE.Color(0x171522);
   threeCamera=new THREE.PerspectiveCamera(48,1,.1,100000);
@@ -387,27 +406,27 @@ async function initThree3D(){
   const axes=new THREE.AxesHelper(1500);axes.position.set(0,-.95,0);threeScene.add(axes);
   threeReady=true;threeInitializing=false;$('world3d').style.display='none';const threeStatus=$('threeStatus');if(threeStatus)threeStatus.style.display='none';
   syncThreeObjects();requestAnimationFrame(()=>{resizeThree3D();if(objects3d.length)focusScene3D()});
-  threeRenderer.domElement.addEventListener('pointerdown',e=>{if(transformControls?.dragging||transformControls?.axis)return;const rect=threeRenderer.domElement.getBoundingClientRect(),mouse=new THREE.Vector2((e.clientX-rect.left)/rect.width*2-1,-((e.clientY-rect.top)/rect.height)*2+1),ray=new THREE.Raycaster();ray.setFromCamera(mouse,threeCamera);const hits=ray.intersectObjects([...threeMeshes.values()],true);if(hits.length){let root=hits[0].object;while(root.parent&&!threeMeshes.has([...threeMeshes].find(([,m])=>m===root)?.[0]))root=root.parent;const entry=[...threeMeshes.entries()].find(([,m])=>m===root);if(entry)select3d(entry[0])}}); 
+  threeRenderer.domElement.addEventListener('pointerdown',e=>{if(previewActive||transformControls?.dragging||transformControls?.axis)return;const rect=threeRenderer.domElement.getBoundingClientRect(),mouse=new THREE.Vector2((e.clientX-rect.left)/rect.width*2-1,-((e.clientY-rect.top)/rect.height)*2+1),ray=new THREE.Raycaster();ray.setFromCamera(mouse,threeCamera);const hits=ray.intersectObjects([...threeMeshes.values()],true);if(hits.length){let root=hits[0].object;while(root.parent&&!threeMeshes.has([...threeMeshes].find(([,m])=>m===root)?.[0]))root=root.parent;const entry=[...threeMeshes.entries()].find(([,m])=>m===root);if(entry)select3d(entry[0])}}); 
   // Controles reais de órbita diretamente no canvas WebGL (o canvas cobre o espaço 3D).
   let orbitPointer=null,orbitLastX=0,orbitLastY=0,pinchStart=0,pinchZoom=1;
   const gl=threeRenderer.domElement;
   gl.style.touchAction='none';
   gl.addEventListener('pointerdown',e=>{
-   if(transformControls?.dragging||transformControls?.axis)return;
+   if(previewActive||transformControls?.dragging||transformControls?.axis)return;
    orbitPointer=e.pointerId;orbitLastX=e.clientX;orbitLastY=e.clientY;
    try{gl.setPointerCapture(e.pointerId)}catch{}
   });
   gl.addEventListener('pointermove',e=>{
-   if(orbitPointer!==e.pointerId||transformControls?.dragging)return;
+   if(previewActive||orbitPointer!==e.pointerId||transformControls?.dragging)return;
    const dx=e.clientX-orbitLastX,dy=e.clientY-orbitLastY;orbitLastX=e.clientX;orbitLastY=e.clientY;
    rotY+=dx*.42;rotX=Math.max(-82,Math.min(82,rotX+dy*.42));updateThreeCamera();
   });
   const endOrbit=e=>{if(orbitPointer===e.pointerId)orbitPointer=null};
   gl.addEventListener('pointerup',endOrbit);gl.addEventListener('pointercancel',endOrbit);
-  gl.addEventListener('wheel',e=>{e.preventDefault();setZoom3d(zoom3d*(e.deltaY>0?.9:1.1))},{passive:false});
+  gl.addEventListener('wheel',e=>{if(previewActive)return;e.preventDefault();setZoom3d(zoom3d*(e.deltaY>0?.9:1.1))},{passive:false});
   let pinchDistance=0,pinchBase=1;
-  gl.addEventListener('touchstart',e=>{if(e.touches.length===2){pinchDistance=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);pinchBase=zoom3d;e.preventDefault()}},{passive:false});
-  gl.addEventListener('touchmove',e=>{if(e.touches.length===2&&pinchDistance){const d=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);setZoom3d(pinchBase*d/pinchDistance);e.preventDefault()}},{passive:false});
+  gl.addEventListener('touchstart',e=>{if(previewActive)return;if(e.touches.length===2){pinchDistance=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);pinchBase=zoom3d;e.preventDefault()}},{passive:false});
+  gl.addEventListener('touchmove',e=>{if(previewActive)return;if(e.touches.length===2&&pinchDistance){const d=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);setZoom3d(pinchBase*d/pinchDistance);e.preventDefault()}},{passive:false});
   gl.addEventListener('touchend',e=>{if(e.touches.length<2)pinchDistance=0});
 
   if(selected3d)select3d(selected3d);
@@ -503,11 +522,11 @@ $('mode2d').onclick=()=>switchMode('2D');
 function setUiCollapsed(collapsed){document.body.classList.toggle('ui-collapsed',collapsed);$('collapseUiBtn').setAttribute('aria-expanded',String(!collapsed));$('collapseUiBtn').textContent=collapsed?'＋ Mostrar barras':'− Ocultar barras';$('restoreUiBtn').hidden=!collapsed;requestAnimationFrame(()=>{if(is3d)resizeThree3D()})}
 $('collapseUiBtn').onclick=()=>setUiCollapsed(!document.body.classList.contains('ui-collapsed'));$('restoreUiBtn').onclick=()=>setUiCollapsed(false);
 $('addCube3d').onclick=()=>add3d('cube');$('addSphere3d').onclick=()=>add3d('sphere');$('addTerrain3d').onclick=()=>add3d('terrain');$('addBuilding3d').onclick=()=>add3d('building');$('addCharacter3d').onclick=()=>add3d('character');$('addTree3d').onclick=()=>add3d('tree');$('addCamera3d').onclick=()=>add3d('camera');$('addLight3d').onclick=()=>add3d('light');$('addHouse3d').onclick=()=>add3d('house');$('addCastle3d').onclick=()=>add3d('castle');$('addForest3d').onclick=()=>add3d('forest');$('addVillage3d').onclick=()=>add3d('village');$('addCity3d').onclick=()=>add3d('city');$('addTemple3d').onclick=()=>add3d('temple');$('reset3d').onclick=()=>{rotX=-22;rotY=-28;setZoom3d(1)};
-const space3d=$('space3d');let touchZoomStart=0,touchZoomBase=1;function touchDistance(t){const dx=t[0].clientX-t[1].clientX,dy=t[0].clientY-t[1].clientY;return Math.hypot(dx,dy)}space3d.addEventListener('touchstart',e=>{if(e.touches.length===2){touchZoomStart=touchDistance(e.touches);touchZoomBase=zoom3d;e.preventDefault()}},{passive:false});space3d.addEventListener('touchmove',e=>{if(e.touches.length===2&&touchZoomStart){e.preventDefault();setZoom3d(touchZoomBase*touchDistance(e.touches)/touchZoomStart)}},{passive:false});space3d.addEventListener('touchend',e=>{if(e.touches.length<2)touchZoomStart=0},{passive:false});space3d.onpointerdown=e=>{if(transformControls?.dragging||transformControls?.axis)return;if(e.target===threeRenderer?.domElement)return;drag3d={x:e.clientX,y:e.clientY,move:false};space3d.setPointerCapture(e.pointerId)};
+const space3d=$('space3d');let touchZoomStart=0,touchZoomBase=1;function touchDistance(t){const dx=t[0].clientX-t[1].clientX,dy=t[0].clientY-t[1].clientY;return Math.hypot(dx,dy)}space3d.addEventListener('touchstart',e=>{if(e.touches.length===2){touchZoomStart=touchDistance(e.touches);touchZoomBase=zoom3d;e.preventDefault()}},{passive:false});space3d.addEventListener('touchmove',e=>{if(e.touches.length===2&&touchZoomStart){e.preventDefault();setZoom3d(touchZoomBase*touchDistance(e.touches)/touchZoomStart)}},{passive:false});space3d.addEventListener('touchend',e=>{if(e.touches.length<2)touchZoomStart=0},{passive:false});space3d.onpointerdown=e=>{if(previewActive||transformControls?.dragging||transformControls?.axis)return;if(e.target===threeRenderer?.domElement)return;drag3d={x:e.clientX,y:e.clientY,move:false};space3d.setPointerCapture(e.pointerId)};
 $('zoomIn3d').setAttribute('aria-label','Aproximar a cena 3D');$('zoomOut3d').setAttribute('aria-label','Afastar a cena 3D');
-$('space3d').onpointermove=e=>{if(transformControls?.dragging||e.target===threeRenderer?.domElement)return;if(!drag3d)return;rotY+=(e.clientX-drag3d.x)*.55;rotX=Math.max(-85,Math.min(85,rotX+(e.clientY-drag3d.y)*.55));drag3d.x=e.clientX;drag3d.y=e.clientY;update3d()};
+$('space3d').onpointermove=e=>{if(previewActive||transformControls?.dragging||e.target===threeRenderer?.domElement)return;if(!drag3d)return;rotY+=(e.clientX-drag3d.x)*.55;rotX=Math.max(-85,Math.min(85,rotX+(e.clientY-drag3d.y)*.55));drag3d.x=e.clientX;drag3d.y=e.clientY;update3d()};
 $('space3d').onpointerup=$('space3d').onpointercancel=()=>drag3d=null;
-$('space3d').onwheel=e=>{e.preventDefault();zoom3d=Math.max(.08,Math.min(8,zoom3d*(e.deltaY>0?.9:1.1)));update3d();$('zoomRange3d').value=zoom3d};
+$('space3d').onwheel=e=>{if(previewActive)return;e.preventDefault();zoom3d=Math.max(.08,Math.min(8,zoom3d*(e.deltaY>0?.9:1.1)));update3d();$('zoomRange3d').value=zoom3d};
 function setZoom3d(v){zoom3d=Math.max(.08,Math.min(8,Number(v)||1));update3d();$('zoomRange3d').value=zoom3d}
 $('zoomIn3d').onclick=()=>setZoom3d(zoom3d+.15);$('zoomOut3d').onclick=()=>setZoom3d(zoom3d-.15);$('zoomRange3d').oninput=e=>setZoom3d(e.target.value);
 $('focus3d').onclick=()=>{const o=objects3d.find(v=>v.id===selected3d);if(!o){$('foot').textContent='Selecione um bloco primeiro.';return}setZoom3d(1.8);rotX=-22;rotY=-28;update3d();$('foot').textContent='Foco no bloco selecionado'};
@@ -968,8 +987,8 @@ function startGamePreview(){
 }
 function startGamePreviewReady(actor){
  if(!previewActive)return;
- if(is3d){resizeThree3D();syncThreeObjects();if(transformControls){transformControls.detach();transformControls.enabled=false}const host=$('three3d');if(host)host.style.pointerEvents='none'}
- if(!actor){$('previewInfo').textContent='Adicione um personagem ou objeto à cena para iniciar a lógica.';gameRuntime=null;return}
+ if(is3d){resizeThree3D();syncThreeObjects();if(transformControls){transformControls.detach();transformControls.enabled=false}const host=$('three3d'),space=$('space3d');if(host)host.style.pointerEvents='none';if(space)space.style.pointerEvents='none';if(threeRenderer?.domElement)threeRenderer.domElement.style.pointerEvents='none'}
+ if(!actor){stopGamePreview();$('status').textContent='Adicione um personagem à cena antes de testar. O primeiro objeto do cenário não será usado como personagem.';return}
  const mesh=is3d?threeMeshes.get(actor.id):null;
  if(is3d&&!mesh){$('previewInfo').textContent='Não foi possível preparar o personagem 3D.';gameRuntime=null;return}
  gameRuntime={logicOnly:true,actorId:actor.id,player3d:mesh||null,x:is3d?0:actor.x-(actor.w||50)/2,y:is3d?0:actor.y-(actor.h||50)/2,w:actor.w||50,h:actor.h||50,vx:0,vy:0,vz:0,onGround:true,hp:100,score:0,level:1,kills:0,goal:0,enemies:[],platforms:[],last:0,finished:false,heading:0,cameraReady:false};
