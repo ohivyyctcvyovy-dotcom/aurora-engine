@@ -1,64 +1,83 @@
 # Aurora Engine
 
-Editor de criação de jogos com interface mobile-first, visual preto e dourado, cenas 2D/3D e Aurora AI integrada.
+Editor de criação de jogos com interface adaptada para Android, cenas 2D/3D e Aurora AI.
 
-## Abrir o editor
+## Publicação
 
-O arquivo principal é `index.html`. Para publicar no GitHub Pages, abra **Settings → Pages → Deploy from a branch → main → /(root)**. Depois o GitHub mostrará a URL publicada na seção Pages.
+O arquivo principal é `index.html`. No GitHub, configure **Settings → Pages → Deploy from a branch → main → /(root)**.
 
-## Forja — construtor de cenas
+## Aurora AI / Forja
 
-O painel Forja interpreta pedidos em linguagem natural e cria cenas em etapas, posicionando objetos 2D/3D por meio das ações permitidas pelo editor. O status aparece no painel e as alterações podem ser revertidas com **Desfazer**. Para respeitar os limites do Worker atual, cada etapa envia até 4 ações, por até 5 etapas (até 20 ações por solicitação). Cenas maiores podem ser continuadas em um novo pedido. A chave da API permanece protegida no Worker, sem ser inserida no HTML ou no navegador.
+A Forja envia o pedido e um resumo da cena ao Worker. Ela pode:
+- Criar, mover, alterar e excluir objetos 2D e 3D dos tipos reconhecidos pelo motor.
+- Criar cenas com prefabs procedurais e distribuir novos objetos em espaços livres quando a posição não é especificada.
+- Criar pisos 3D por grade (por exemplo, 5×5) e paredes com lados `north`, `south`, `east` e `west`, alinhadas às bordas do piso.
+- Gerar JavaScript para a API Aurora e colocá-lo no Editor de Código.
 
-## Aurora AI — integração com a API existente
+A IA não é um gerador irrestrito de qualquer sistema: ações de cena precisam usar tipos reconhecidos pelo editor; scripts precisam usar a API que o motor oferece. Recursos ou mecânicas novas exigem implementação no motor.
 
-O painel Aurora AI já vem configurado por padrão para usar:
+## Scripts
 
-`https://aurora-api.ohivyyctcvyovy.workers.dev`
+Quando você pedir um script, a IA deve devolver código no campo de código e abrir o Editor de Código. Revise e toque em **Executar código** para testar. Se houver erro de JavaScript, o Editor de Código mostra a mensagem.
 
-A ponte `ai/bridge.js` usa o contrato da API Aurora:
-- Envia `POST /chat` com `{ message: "...", project: {...} }`, no mesmo formato que o Worker recebe.
-- Recebe `{ reply: "...", actions: [...] }` e aplica as ações autorizadas no editor.
-- A integração agora reconhece tanto ações 2D quanto ações 3D retornadas pelo modelo.
-- O endereço pode ser alterado no campo **Endpoint da IA**; a escolha fica salva no navegador.
+API atualmente oferecida:
 
-### O que a IA consegue fazer no editor
+- `aurora.criar(tipo, x, y)`
+- `aurora.cor(id, "#RRGGBB")`
+- `aurora.personagem(x, y, cor)`
+- `aurora.plataforma(x, y, largura, altura, cor)`
+- `aurora.texto(texto, x, y, cor, tamanho)`
+- `aurora.cenario(cor)`
+- `aurora.item(x, y, cor)`
+- `aurora.criar3D(tipo, x, y, z)`
+- `aurora.criarChao3D(tilesX, tilesZ, x, z)`
+- `aurora.criarParede3D(lado, comprimento, altura, x, z)`
+- `aurora.mover3D(id, x, y, z)`
+- `aurora.escala3D(id, x, y, z)`
+- `aurora.girar3D(id, x, y, z)`
+- `aurora.cor3D(id, cor)`
+- `aurora.nomear(id, nome)`
+- `aurora.limparCena()`
 
-- Criar, editar, mover e excluir objetos 2D.
-- Montar cenas 2D com formas, personagens visuais, casas, árvores, montanhas, nuvens, água, estradas, pontes e prédios procedurais.
-- Usar uma biblioteca de prefabs 3D compostos: casas, castelos, pontes, estradas, água, montanhas, rochas, postes, bancos, fontes, portais, florestas, vilas, cidades, templos e interiores.
-- Pedir à Aurora composições maiores com caminhos, profundidade, iluminação e pontos de interesse; prefabs compostos ajudam a criar locais ricos com menos ações.
-- Criar, editar e excluir objetos 3D: cubos, esferas, terrenos, prédios, personagens visuais, árvores, câmeras e luzes.
-- Analisar o resumo da cena atual para orientar as alterações.
-- Gerar JavaScript e colocá-lo no **Editor de Código** para revisão.
+**Segurança:** a execução atual usa o contexto da página do editor, não um ambiente isolado. Execute somente scripts que você confia e revise o conteúdo antes de executar. O código não é executado automaticamente ao ser gerado.
 
-As ações estruturadas passam por uma lista de tipos permitidos no editor. As alterações podem ser revertidas pelo botão **Desfazer**. Código gerado não é executado automaticamente: revise-o antes de tocar em **Executar código**.
+## Play / testar
 
-### Requisitos da API
+O modo Play desativa a seleção e a órbita da câmera do editor. O joystick controla o personagem; a câmera de edição não deve receber os toques de jogo. Para testar, a cena precisa ter um objeto do tipo personagem (2D/3D) ou sprite. O motor não deve mover o primeiro objeto do cenário como substituto de personagem.
 
-### Configuração do OmniRoute no Cloudflare Worker
+O Play atual é uma prévia de teste das funções suportadas, não um compilador completo de jogos exportáveis.
 
-O Worker usa a API OpenAI-compatível do OmniRoute em `/v1/chat/completions`. Configure no Cloudflare (Workers → Settings → Variables and Secrets):
+## Posicionamento 2D e 3D
 
-- `OMNIROUTE_BASE_URL`: endereço da sua instância, incluindo `/v1` (ex.: `https://SEU-ENDERECO/v1`).
-- `OMNIROUTE_MODEL`: ID exato do modelo exibido por `GET /v1/models`.
-- `AI_ALLOWED_MODELS`: lista separada por vírgulas dos IDs de modelos que você verificou como gratuitos. O Worker recusa modelos que não estejam nessa lista.
-- `OMNIROUTE_API_KEY`: crie como **Secret**, nunca como variável pública nem no HTML.
+- Em 2D, quando a IA não recebe uma posição definida, o editor procura uma área livre em vez de empilhar tudo no centro.
+- Em 3D, quando a IA não recebe X/Z, o editor procura um ponto livre no piso.
+- Um piso 5×5 usa cinco quadrados de 100 unidades em cada direção.
+- Paredes 3D usam o lado do piso e dimensões reais para encostar nas bordas. Para uma sala fechada, a IA deve criar paredes nos quatro lados.
 
-A conta/instância OmniRoute precisa estar acessível pela internet a partir do Cloudflare Worker. Um endereço local como `http://localhost:20128/v1` não funciona a partir de um Worker hospedado. O OmniRoute oferece uma API compatível com OpenAI em `/v1`; consulte a documentação oficial para confirmar o endpoint e os IDs disponíveis: https://github.com/cheaper-inference/OmniRoute/blob/main/docs/reference/OPENAI_COMPATIBILITY.md
+## Enviar seus próprios recursos
 
-O projeto não escolhe automaticamente um modelo pago: só permite o ID definido em `OMNIROUTE_MODEL` se ele também estiver na lista `AI_ALLOWED_MODELS`. Confirme no painel do OmniRoute que os modelos listados são gratuitos antes de adicioná-los. Cotas gratuitas podem mudar, ter limites e ficar indisponíveis; não existe garantia de uso ilimitado.
+Na **Biblioteca de Recursos**, use **Enviar meus arquivos**. Formatos aceitos:
+- Modelos 3D: `.glb` (até 40 MB por arquivo).
+- Texturas: `.png`, `.jpg`, `.jpeg`, `.webp` (aplicadas ao objeto 3D selecionado).
+- Áudio: `.mp3`, `.wav`, `.ogg`.
 
-## Melhorias desta atualização\n\n- Correção do contrato entre a Forja no navegador e o Worker (`message` + `project`; resposta `reply` + `actions`).\n- Integração do Worker com OmniRoute e bloqueio de modelos que não estejam na lista explícita `AI_ALLOWED_MODELS`.\n- Ditado em português brasileiro pelo microfone e leitura em voz alta da última resposta, quando o navegador oferece Web Speech API.\n- Ajustes de renderização 3D para celulares: antialiasing e sombras reduzidos em dispositivos móveis, limite de pixel ratio e pausa do render quando a página fica em segundo plano.\n- Melhorias de acessibilidade de toque e escala de texto no celular.\n\nO reconhecimento de voz depende do navegador, da permissão do microfone e pode usar um serviço de reconhecimento remoto; não é garantido offline. A leitura em voz alta usa a síntese de voz do navegador.\n\n## Recursos do editor
+Você pode selecionar vários arquivos do pack de uma vez. Os arquivos são guardados no armazenamento local do navegador (IndexedDB) e permanecem neste dispositivo/navegador. O JSON exportado do projeto guarda as referências, mas não incorpora os arquivos binários; mantenha os arquivos originais. Arquivos ZIP e modelos glTF com dependências externas não são importados diretamente; prefira GLB.
 
-- Editor 2D em Canvas e editor 3D WebGL.
-- Seleção, movimentação por toque/mouse e inspetor de propriedades.
-- Hierarquia, grade, criação de cenas e desfazer.
-- Salvar localmente, importar e exportar projetos JSON.
-- Editor de código JavaScript.
-- Biblioteca de recursos e editor de lógica visual.
-- Interface adaptada para celulares e computadores.
+## OmniRoute
 
-## Limites atuais
+O Worker usa a API compatível com OpenAI do OmniRoute em `/v1/chat/completions`. Configure no Cloudflare Worker:
 
-Esta é uma versão em evolução. A IA pode aplicar até 20 ações estruturadas por solicitação (4 por etapa, em até 5 etapas). Para cenas grandes, ela deve priorizar prefabs compostos e distribuí-los com posições e escalas coerentes. Recursos como execução completa de jogos exportáveis, multiplayer online, publicação Android/PC e sistemas avançados de jogo ainda exigem desenvolvimento adicional.
+- `OMNIROUTE_BASE_URL`: URL pública da instância, incluindo `/v1`.
+- `OMNIROUTE_MODEL`: ID exato do modelo.
+- `AI_ALLOWED_MODELS`: lista separada por vírgulas dos IDs que foram confirmados como gratuitos.
+- `OMNIROUTE_API_KEY`: segredo do Worker, nunca no HTML.
+
+O Worker recusa modelos que não estejam em `AI_ALLOWED_MODELS`. Confirme no OmniRoute quais modelos são gratuitos; cotas podem mudar e não são ilimitadas.
+
+## Limitações conhecidas
+
+- A execução de scripts ainda não está isolada em sandbox.
+- A prévia Play oferece controles e lógica básica, não todos os sistemas de um motor profissional.
+- GLB é o formato recomendado para modelos 3D; ZIP não é extraído pelo editor.
+- Recursos enviados ficam no armazenamento local do navegador e não são embutidos no JSON exportado.
+- Mecânicas personalizadas além da API Aurora precisam ser implementadas no motor.

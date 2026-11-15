@@ -65,6 +65,7 @@ header{height:58px;display:flex;align-items:center;gap:9px;padding:0 13px;border
 .asset-preview{height:76px;border-radius:8px;background:radial-gradient(circle,#3a3042,#15141a);display:grid;place-items:center;font-size:36px;color:var(--gold2)}
 .asset-card b{font-size:12px}.asset-card small{font-size:10px;color:var(--muted);flex:1}.asset-card button{font-size:11px}
 #assetLibrary .hint{margin:5px 0 10px}
+.asset-upload{padding:10px;margin:8px 0 12px;border:1px dashed #6e5933;border-radius:10px;background:#17151b}.uploaded-assets{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:8px;margin-top:8px}.uploaded-file{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px;border:1px solid var(--line);border-radius:8px;background:#0d0d12}.uploaded-file span{min-width:0;overflow-wrap:anywhere;font-size:11px}.uploaded-file button{flex:0 0 auto;font-size:10px;padding:6px 8px}
 
 body.preview-mode{overflow:hidden}
 body.preview-mode header,body.preview-mode .left,body.preview-mode .right,body.preview-mode .toolbar,body.preview-mode .foot,body.preview-mode #aiRestore{display:none!important}
@@ -260,7 +261,7 @@ body.ui-collapsed .toolbar,body.ui-collapsed #viewport3d .view3dbar{display:none
 <div class="layout">
 <aside class="panel left" id="objectsPanel"><div class="sect"><div class="panel-head"><h3>Objetos</h3><button class="back-panel" id="backObjects" type="button">← Voltar</button></div></div><div class="sect"><h3>Criar objeto</h3><div class="tools"><button data-add="rect">▰ Retângulo</button><button data-add="circle">● Círculo</button><button data-add="text">T Texto</button><button data-add="star">✦ Estrela</button><button data-add="character">♟ Personagem</button><button data-add="sprite">▧ Sprite</button><button data-add="platform">▱ Plataforma</button><button data-add="scenario">▦ Cenário</button><button data-add="collision">▣ Colisão</button><button data-add="house">⌂ Casa</button><button data-add="tree">♣ Árvore</button><button data-add="mountain">▲ Montanha</button><button data-add="water">≈ Água</button><button data-add="road">━ Estrada</button><button data-add="bridge">⌁ Ponte</button><button data-add="building">▥ Prédio</button></div></div><div class="sect"><h3>Hierarquia</h3><div class="tree" id="tree"></div></div><div class="sect"><h3>Cena</h3><button id="clearScene">Nova cena vazia</button></div></aside>
 <main class="center"><nav class="toolbar"><button id="mode3d" class="active" type="button">Cena 3D</button><button id="mode2d" type="button">Cena 2D</button><button id="codeBtn">Código</button><button id="logicBtn">◇ Lógica visual</button><button id="gridBtn" class="active">Grade</button><button id="exportBtn">Exportar projeto</button><button id="importBtn">Importar projeto</button><input id="file" type="file" accept=".json" hidden></nav><div class="stagewrap"><div class="stage"><canvas id="canvas" width="1280" height="720"></canvas><div id="viewport3d" hidden><div class="view3dbar"><span>VISTA 3D · ARRASTE PARA GIRAR</span><button id="addCube3d" type="button">+ Cubo</button><button id="addSphere3d" type="button">+ Esfera</button><button id="addTerrain3d" type="button">+ Terreno</button><button id="addBuilding3d" type="button">+ Prédio</button><button id="addCharacter3d" type="button">+ Personagem</button><button id="addTree3d" type="button">+ Árvore</button><button id="addCamera3d" type="button">+ Câmera</button><button id="addLight3d" type="button">+ Luz</button><button type="button" id="addHouse3d">+ Casa</button><button type="button" id="addCastle3d">+ Castelo</button><button type="button" id="addForest3d">+ Floresta</button><button type="button" id="addVillage3d">+ Vila</button><button type="button" id="addCity3d">+ Cidade</button><button type="button" id="addTemple3d">+ Templo</button><button id="zoomOut3d" type="button" title="Afastar">−</button><input id="zoomRange3d" type="range" min="0.08" max="8" step="0.02" value="1" aria-label="Zoom da cena 3D" style="width:76px;accent-color:#d7ad58"><button id="zoomIn3d" type="button" title="Aproximar">+</button><button id="focus3d" type="button">Focar item</button><button id="reset3d" type="button">Centralizar</button><button id="fullscreen3d" type="button">Tela cheia</button></div><div id="space3d"><div id="three3d" aria-label="Cena 3D renderizada"><div id="threeStatus">Preparando motor 3D…</div></div><div id="world3d"><div id="grid3d"></div><div id="axisX"></div><div id="axisZ"></div><div id="objects3d"></div></div>
-</div><div class="view3dhint">Toque/arraste para girar · Use dois dedos ou roda para ajustar a vista</div></div></div></div><div id="codeWorkspace" hidden><div class="codeHead"><b>EDITOR DE CÓDIGO</b><button id="backTo3dFromCode" class="primary" type="button">← Voltar à cena 3D</button><button id="closeCode">Fechar</button></div><p>Use a API <code>aurora.criar</code>, <code>aurora.cor</code> e <code>aurora.pular</code>.</p><textarea id="gameCode" spellcheck="false">// Exemplo: crie objetos nas cenas 2D e 3D
+</div><div class="view3dhint">Toque/arraste para girar · Use dois dedos ou roda para ajustar a vista</div></div></div></div><div id="codeWorkspace" hidden><div class="codeHead"><b>EDITOR DE CÓDIGO</b><button id="backTo3dFromCode" class="primary" type="button">← Voltar à cena 3D</button><button id="closeCode">Fechar</button></div><p>Use a API <code>aurora.criar</code>, <code>aurora.criar3D</code>, <code>aurora.criarChao3D</code> e <code>aurora.criarParede3D</code>. Gere o script com a IA, revise e toque em Executar código. Execute apenas scripts de fontes confiáveis.</p><textarea id="gameCode" spellcheck="false">// Exemplo: crie objetos nas cenas 2D e 3D
 const painel = aurora.criar("rect", 640, 360);
 aurora.cor(painel, "#d7ad58");
 const cubo = aurora.criar3D("cube", 0, 0, 0);
@@ -278,16 +279,17 @@ const aiEndpointInput=$('aiEndpoint');
 aiEndpointInput.value=localStorage.getItem('aurora-engine-ai-endpoint')||AI_ENDPOINT_DEFAULT;
 aiEndpointInput.addEventListener('change',()=>localStorage.setItem('aurora-engine-ai-endpoint',aiEndpointInput.value.trim()));
 let is3d=true,rotX=-22,rotY=-28,zoom3d=1,drag3d=null,extra3dCount=0,selected3d=null,objects3d=[];let objects=[],selected=null,grid=true,running=false,drag=null,undoStack=[];
-const ai=createAIClient({getEndpoint:()=>$('aiEndpoint').value.trim(),getProject:()=>projectSnapshot(),applyActions:applyAIActions,onProgress:message=>{const status=$('forjaStatus');if(status)status.textContent=message||'Forja pronta.'},onCode:code=>{$('gameCode').value=code;$('codeWorkspace').hidden=false;canvas.hidden=is3d;$('viewport3d').hidden=!is3d;$('codeStatus').textContent='Código gerado pela Aurora. Revise antes de executar.'},onMessage:(role,text)=>{const d=document.createElement('div');d.className='bubble '+(role==='user'?'user':'');d.textContent=text;$('aiMessages').append(d);$('aiMessages').scrollTop=$('aiMessages').scrollHeight}});
+const ai=createAIClient({getEndpoint:()=>$('aiEndpoint').value.trim(),getProject:()=>projectSnapshot(),applyActions:applyAIActions,onProgress:message=>{const status=$('forjaStatus');if(status)status.textContent=message||'Forja pronta.'},onCode:code=>{$('gameCode').value=code;openCodeWorkspace();$('codeStatus').textContent='Script gerado pela Aurora. Toque em “Executar código” para testar. Erros serão mostrados aqui.'},onMessage:(role,text)=>{const d=document.createElement('div');d.className='bubble '+(role==='user'?'user':'');d.textContent=text;$('aiMessages').append(d);$('aiMessages').scrollTop=$('aiMessages').scrollHeight}});
 const projectSnapshot=()=>({name:'Meu jogo',engine:'Aurora Engine',mode:is3d?'3D':'2D',width:canvas.width,height:canvas.height,objects:objects.map(o=>({...o})),objects3d:objects3d.map(o=>({...o}))});
 function rememberUndo(){undoStack.push(JSON.stringify({objects,objects3d}));if(undoStack.length>30)undoStack.shift();$('undoBtn').disabled=false}
 function undo(){const old=undoStack.pop();if(!old)return;const snap=JSON.parse(old);if(Array.isArray(snap)){objects=snap}else{objects=Array.isArray(snap.objects)?snap.objects:[];objects3d=Array.isArray(snap.objects3d)?snap.objects3d:[]}selected=null;selected3d=null;refresh();draw();render3dObjects();$('status').textContent='Alteração desfeita'}
 $('undoBtn').onclick=undo;
+function findFree2DSpot(w=120,h=90){for(let row=0;row<5;row++)for(let col=0;col<7;col++){const x=120+col*170,y=115+row*125;const busy=objects.some(o=>!o.hidden&&Math.abs(o.x-x)<(o.w+w)/2+18&&Math.abs(o.y-y)<(o.h+h)/2+18);if(!busy)return{x,y}}return{x:640,y:360}}
 function applyAIActions(actions){
  if(!Array.isArray(actions)||actions.length>60)throw new Error('Lista de ações inválida ou muito grande.');
  const allowedTypes=['rect','circle','text','star','character','sprite','platform','scenario','collision','house','tree','mountain','cloud','water','road','bridge','building'];
- const allowed3D=['cube','sphere','terrain','building','character','tree','camera','light','house','castle','bridge','road','water','mountain','rock','lamp','bench','fountain','portal','forest','village','city','temple','room'];
- const kindAliases={wall:'cube',floor:'cube',door:'cube',table:'cube',desk:'cube',chair:'cube',window:'cube',column:'cube',pillar:'cube',stairs:'cube',step:'cube',platform:'cube',fence:'cube',box:'cube',block:'cube',ground:'terrain'};
+ const allowed3D=['cube','sphere','terrain','floor','wall','door','window','column','stairs','building','character','tree','camera','light','house','castle','bridge','road','water','mountain','rock','lamp','bench','fountain','portal','forest','village','city','temple','room'];
+ const kindAliases={table:'cube',desk:'cube',chair:'cube',pillar:'column',step:'stairs',platform:'cube',fence:'wall',box:'cube',block:'cube',ground:'floor'};
  let changed=false,targetMode=null;
  if(actions.length)rememberUndo();
  const actionAliases={create_2d_object:'create_object',add_object:'create_object',spawn_object:'create_object',create3d:'create_3d_object',create_3d:'create_3d_object',add_3d_object:'create_3d_object',spawn_3d_object:'create_3d_object'};
@@ -322,7 +324,7 @@ function applyAIActions(actions){
    const p=a.object||a;if(!allowedTypes.includes(p.type))continue;
    const dims=p.size&&typeof p.size==='object'?p.size:{};
    const width=p.w??p.width??dims.width,height=p.h??p.height??dims.height;
-   objects.push({id:crypto.randomUUID(),type:p.type,name:String(p.name||p.label||'Objeto IA').slice(0,60),x:clamp(p.x??p.position?.x,0,1280,640),y:clamp(p.y??p.position?.y,0,720,360),w:clamp(width,10,700,p.type==='platform'?320:140),h:clamp(height,10,700,p.type==='platform'?32:100),color:validColor(p.color)?p.color:'#d7ad58',text:String(p.text||p.label||'').slice(0,200),fontSize:clamp(p.fontSize,8,160,42),animated:p.animated===true,collision:p.collision===true});targetMode='2D';changed=true;
+   const ow=clamp(width,10,700,p.type==='platform'?320:140),oh=clamp(height,10,700,p.type==='platform'?32:100);let px=p.x??p.position?.x,py=p.y??p.position?.y;if(p.type!=='scenario'&&((px===undefined&&py===undefined)||(!p.position&&Number(px)===640&&Number(py)===360))){const spot=findFree2DSpot(ow,oh);px=spot.x;py=spot.y}objects.push({id:crypto.randomUUID(),type:p.type,name:String(p.name||p.label||'Objeto IA').slice(0,60),x:clamp(px,0,1280,p.type==='character'?180:640),y:clamp(py,0,720,p.type==='character'?560:360),w:ow,h:oh,color:validColor(p.color)?p.color:'#d7ad58',text:String(p.text||p.label||'').slice(0,200),fontSize:clamp(p.fontSize,8,160,42),animated:p.animated===true,collision:p.collision===true});targetMode='2D';changed=true;
   }else if(a.type==='update_object'){
    const o=objects.find(v=>(a.id&&v.id===a.id)||(a.name&&v.name===a.name));if(!o)continue;
    const c=a.changes||{};if(typeof c.name==='string')o.name=c.name.slice(0,60);
@@ -335,8 +337,26 @@ function applyAIActions(actions){
   }else if(a.type==='create_3d_object'){
    const p=a.object||a;const requestedKind=String(p.kind||p.type||p.objectType||'').toLowerCase();const kind=allowed3D.includes(requestedKind)?requestedKind:(kindAliases[requestedKind]||'');if(!kind)continue;
    const rawColor=p.color;const color=typeof rawColor==='string'&&/^#[0-9a-fA-F]{6}$/.test(rawColor)?parseInt(rawColor.slice(1),16):(Number.isFinite(Number(rawColor))?Math.max(0,Math.min(0xffffff,Number(rawColor))):0xd7ad58);
-   objects3d.push({id:'ai3d-'+crypto.randomUUID(),kind,name:String(p.name||requestedKind||'Objeto 3D IA').slice(0,60),color,x:clamp(p.x,-10000,10000,0),y:clamp(p.y,-10000,10000,0),z:clamp(p.z,-10000,10000,0),sx:clamp(p.sx??(p.width!=null?Number(p.width)/130:1),.05,100,1),sy:clamp(p.sy??(p.height!=null?Number(p.height)/130:1),.05,100,1),sz:clamp(p.sz??(p.depth!=null?Number(p.depth)/130:1),.05,100,1),rx:clamp(p.rx,-360,360,0),ry:clamp(p.ry,-360,360,0),rz:clamp(p.rz,-360,360,0)});
-   extra3dCount++;targetMode='3D';changed=true;
+   const floor=[...objects3d].reverse().find(o=>o.kind==='floor'||o.kind==='terrain'),floorX=floor?.x||0,floorZ=floor?.z||0,floorW=floor?.width||(600*(floor?.sx||1)),floorD=floor?.depth||(600*(floor?.sz||1));
+   let x=Number.isFinite(Number(p.x))?Number(p.x):null,z=Number.isFinite(Number(p.z))?Number(p.z):null,y=Number.isFinite(Number(p.y))?Number(p.y):0;
+   const wallSide=String(p.side||'').toLowerCase();let width=Number(p.width)||130,height=Number(p.height)||130,depth=Number(p.depth)||130,side=wallSide;
+   if(kind==='floor'||kind==='terrain'){width=clamp(p.width??(Number(p.tilesX)||6)*100,20,10000,600);depth=clamp(p.depth??(Number(p.tilesZ)||6)*100,20,10000,600);x=x??0;z=z??0;y=Number.isFinite(Number(p.y))?Number(p.y):0}
+   else if(kind==='wall'){
+    const usedSides=objects3d.filter(o=>o.kind==='wall'&&o.name?.startsWith('Parede ')).map(o=>o.side);
+    if(!['north','south','east','west'].includes(side))side=['north','east','south','west'].find(s=>!usedSides.includes(s))||'north';
+    height=clamp(p.height,20,2000,240);const thickness=clamp(p.thickness??p.depth,4,200,18);
+    if(side==='north'||side==='south'){width=clamp(p.length??p.width??floorW,20,10000,floorW);depth=thickness;x=x??floorX;z=z??(floorZ+(side==='north'?-1:1)*floorD/2);}
+    else{width=thickness;depth=clamp(p.length??p.depth??floorD,20,10000,floorD);x=x??(floorX+(side==='west'?-1:1)*floorW/2);z=z??floorZ;}
+    y=Number.isFinite(Number(p.y))?Number(p.y):height/2;
+   }else{
+    if(x===null||z===null||(x===0&&z===0&&!p.position&&!p.anchor)){
+     const step=150,margin=90,minX=floorX-floorW/2+margin,minZ=floorZ-floorD/2+margin,maxX=floorX+floorW/2-margin,maxZ=floorZ+floorD/2-margin;let spot=null;
+     for(let row=0;row<12&&!spot;row++)for(let col=0;col<12&&!spot;col++){const cx=minX+col*step,cz=minZ+row*step;if(cx>maxX||cz>maxZ)continue;const busy=objects3d.some(o=>!['floor','terrain','wall'].includes(o.kind)&&Math.hypot((o.x||0)-cx,(o.z||0)-cz)<105);if(!busy)spot={x:cx,z:cz}}
+     if(spot){x=spot.x;z=spot.z}else{x=x??floorX;z=z??floorZ}
+    }
+   }
+   const id='ai3d-'+crypto.randomUUID();const ob={id,kind,name:String(p.name||(kind==='wall'?'Parede '+side:requestedKind||'Objeto 3D IA')).slice(0,60),color,x:x??floorX,y,z:z??floorZ,width,height,depth,side,tilesX:p.tilesX,tilesZ:p.tilesZ,sx:clamp(p.sx??(['wall','door','window','column','stairs','floor','terrain'].includes(kind)?1:width/130),.05,100,1),sy:clamp(p.sy??(['wall','door','window','column','stairs','floor','terrain'].includes(kind)?1:height/130),.05,100,1),sz:clamp(p.sz??(['wall','door','window','column','stairs','floor','terrain'].includes(kind)?1:depth/130),.05,100,1),rx:clamp(p.rx,-360,360,0),ry:clamp(p.ry,-360,360,0),rz:clamp(p.rz,-360,360,0)};
+   objects3d.push(ob);extra3dCount++;targetMode='3D';changed=true;
   }else if(a.type==='update_3d_object'){
    const o=objects3d.find(v=>(a.id&&v.id===a.id)||(a.name&&v.name===a.name));if(!o)continue;const c=a.changes||{};
    if(typeof c.name==='string')o.name=c.name.slice(0,60);
@@ -366,13 +386,14 @@ document.querySelectorAll('[data-add]').forEach(b=>b.onclick=()=>{switchMode('2D
 function save(){localStorage.setItem('aurora-project',JSON.stringify(projectSnapshot()));$('status').textContent='Projeto salvo neste navegador'}$('saveBtn').onclick=save;
 $('exportBtn').onclick=()=>{let blob=new Blob([JSON.stringify(projectSnapshot(),null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='projeto-aurora.json';a.click();URL.revokeObjectURL(a.href)};
 $('importBtn').onclick=()=>$('file').click();$('file').onchange=async e=>{try{let d=JSON.parse(await e.target.files[0].text());objects=d.objects||[];objects.forEach(o=>{if(!Array.isArray(o.logic))o.logic=[]});if(Array.isArray(d.objects3d))objects3d=d.objects3d.map(o=>({...o,logic:Array.isArray(o.logic)?o.logic:[]}));selected=null;selected3d=objects3d[0]?.id||null;refresh();render3dObjects();switchMode(d.mode==='3D'?'3D':'2D')}catch{alert('Arquivo de projeto inválido')}};
-$('clearScene').onclick=()=>{if(confirm('Criar uma cena vazia?')){rememberUndo();objects=[];selected=null;refresh();draw()}};let THREE=null,threeRenderer=null,threeScene=null,threeCamera=null,threeMeshes=new Map(),threeReady=false,threeInitializing=false,threeFrame=0,transformControls=null;
+$('clearScene').onclick=()=>{if(confirm('Criar uma cena vazia?')){rememberUndo();objects=[];selected=null;refresh();draw()}};let THREE=null,GLTFLoader=null,uploadedModelCache=new Map(),uploadedTextureCache=new Map(),threeRenderer=null,threeScene=null,threeCamera=null,threeMeshes=new Map(),threeReady=false,threeInitializing=false,threeFrame=0,transformControls=null;
 async function initThree3D(){
  if(threeReady||threeInitializing)return;
  threeInitializing=true;
  try{
   THREE=await import('https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js');
   const {TransformControls}=await import('https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/controls/TransformControls.js');
+  const gltfModule=await import('https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/loaders/GLTFLoader.js');GLTFLoader=gltfModule.GLTFLoader;
   const host=$('three3d');if(!host||threeReady)return;
   threeScene=new THREE.Scene();threeScene.background=new THREE.Color(0x171522);
   threeCamera=new THREE.PerspectiveCamera(48,1,.1,100000);
@@ -385,29 +406,29 @@ async function initThree3D(){
   const fill=new THREE.PointLight(0x8c78ff,700,1800);fill.position.set(-450,180,-350);threeScene.add(fill);
   const grid=new THREE.GridHelper(30000,600,0xb99a5e,0x51466b);grid.position.y=-1;threeScene.add(grid);
   const axes=new THREE.AxesHelper(1500);axes.position.set(0,-.95,0);threeScene.add(axes);
-  threeReady=true;threeInitializing=false;$('world3d').style.display='none';const threeStatus=$('threeStatus');if(threeStatus)threeStatus.style.display='none';
+  threeReady=true;threeInitializing=false;restoreUploadedModels();$('world3d').style.display='none';const threeStatus=$('threeStatus');if(threeStatus)threeStatus.style.display='none';
   syncThreeObjects();requestAnimationFrame(()=>{resizeThree3D();if(objects3d.length)focusScene3D()});
-  threeRenderer.domElement.addEventListener('pointerdown',e=>{if(transformControls?.dragging||transformControls?.axis)return;const rect=threeRenderer.domElement.getBoundingClientRect(),mouse=new THREE.Vector2((e.clientX-rect.left)/rect.width*2-1,-((e.clientY-rect.top)/rect.height)*2+1),ray=new THREE.Raycaster();ray.setFromCamera(mouse,threeCamera);const hits=ray.intersectObjects([...threeMeshes.values()],true);if(hits.length){let root=hits[0].object;while(root.parent&&!threeMeshes.has([...threeMeshes].find(([,m])=>m===root)?.[0]))root=root.parent;const entry=[...threeMeshes.entries()].find(([,m])=>m===root);if(entry)select3d(entry[0])}}); 
+  threeRenderer.domElement.addEventListener('pointerdown',e=>{if(previewActive||transformControls?.dragging||transformControls?.axis)return;const rect=threeRenderer.domElement.getBoundingClientRect(),mouse=new THREE.Vector2((e.clientX-rect.left)/rect.width*2-1,-((e.clientY-rect.top)/rect.height)*2+1),ray=new THREE.Raycaster();ray.setFromCamera(mouse,threeCamera);const hits=ray.intersectObjects([...threeMeshes.values()],true);if(hits.length){let root=hits[0].object;while(root.parent&&!threeMeshes.has([...threeMeshes].find(([,m])=>m===root)?.[0]))root=root.parent;const entry=[...threeMeshes.entries()].find(([,m])=>m===root);if(entry)select3d(entry[0])}}); 
   // Controles reais de órbita diretamente no canvas WebGL (o canvas cobre o espaço 3D).
   let orbitPointer=null,orbitLastX=0,orbitLastY=0,pinchStart=0,pinchZoom=1;
   const gl=threeRenderer.domElement;
   gl.style.touchAction='none';
   gl.addEventListener('pointerdown',e=>{
-   if(transformControls?.dragging||transformControls?.axis)return;
+   if(previewActive||transformControls?.dragging||transformControls?.axis)return;
    orbitPointer=e.pointerId;orbitLastX=e.clientX;orbitLastY=e.clientY;
    try{gl.setPointerCapture(e.pointerId)}catch{}
   });
   gl.addEventListener('pointermove',e=>{
-   if(orbitPointer!==e.pointerId||transformControls?.dragging)return;
+   if(previewActive||orbitPointer!==e.pointerId||transformControls?.dragging)return;
    const dx=e.clientX-orbitLastX,dy=e.clientY-orbitLastY;orbitLastX=e.clientX;orbitLastY=e.clientY;
    rotY+=dx*.42;rotX=Math.max(-82,Math.min(82,rotX+dy*.42));updateThreeCamera();
   });
   const endOrbit=e=>{if(orbitPointer===e.pointerId)orbitPointer=null};
   gl.addEventListener('pointerup',endOrbit);gl.addEventListener('pointercancel',endOrbit);
-  gl.addEventListener('wheel',e=>{e.preventDefault();setZoom3d(zoom3d*(e.deltaY>0?.9:1.1))},{passive:false});
+  gl.addEventListener('wheel',e=>{if(previewActive)return;e.preventDefault();setZoom3d(zoom3d*(e.deltaY>0?.9:1.1))},{passive:false});
   let pinchDistance=0,pinchBase=1;
-  gl.addEventListener('touchstart',e=>{if(e.touches.length===2){pinchDistance=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);pinchBase=zoom3d;e.preventDefault()}},{passive:false});
-  gl.addEventListener('touchmove',e=>{if(e.touches.length===2&&pinchDistance){const d=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);setZoom3d(pinchBase*d/pinchDistance);e.preventDefault()}},{passive:false});
+  gl.addEventListener('touchstart',e=>{if(previewActive)return;if(e.touches.length===2){pinchDistance=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);pinchBase=zoom3d;e.preventDefault()}},{passive:false});
+  gl.addEventListener('touchmove',e=>{if(previewActive)return;if(e.touches.length===2&&pinchDistance){const d=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);setZoom3d(pinchBase*d/pinchDistance);e.preventDefault()}},{passive:false});
   gl.addEventListener('touchend',e=>{if(e.touches.length<2)pinchDistance=0});
 
   if(selected3d)select3d(selected3d);
@@ -431,17 +452,24 @@ function updateThreeCamera(){
  threeCamera.lookAt(target);
 }
 function build3dObject(o){
+ if(o.kind==="uploaded"&&uploadedModelCache.has(o.assetId)){const model=uploadedModelCache.get(o.assetId).clone(true);if(o.textureAssetId&&uploadedTextureCache.has(o.textureAssetId)){const texture=uploadedTextureCache.get(o.textureAssetId);model.traverse(node=>{if(node.isMesh){const mats=Array.isArray(node.material)?node.material:[node.material];node.material=mats.map(m=>{const clone=m.clone();clone.map=texture;clone.needsUpdate=true;return clone})}})}model.position.set(o.x||0,o.y||0,o.z||0);model.scale.set(o.sx||1,o.sy||1,o.sz||1);model.rotation.set(THREE.MathUtils.degToRad(o.rx||0),THREE.MathUtils.degToRad(o.ry||0),THREE.MathUtils.degToRad(o.rz||0));return model}
  const prefab=buildAurora3DPrefab(THREE,o);if(prefab)return prefab;
  const group=new THREE.Group(),mat=new THREE.MeshStandardMaterial({color:o.color||0xd7ad58,metalness:.22,roughness:.55});
  const add=(geo,material=mat,x=0,y=0,z=0)=>{const m=new THREE.Mesh(geo,material);m.position.set(x,y,z);m.castShadow=true;m.receiveShadow=true;group.add(m);return m};
  if(o.kind==='sphere')add(new THREE.SphereGeometry(55,32,20));
- else if(o.kind==='terrain'){const groundMat=new THREE.MeshStandardMaterial({color:o.color||0x526b45,roughness:1});add(new THREE.PlaneGeometry(600,600,32,32),groundMat).rotation.x=-Math.PI/2;group.position.y=-2}
+ else if(o.kind==='terrain'||o.kind==='floor'){const groundMat=new THREE.MeshStandardMaterial({color:o.color||0x526b45,roughness:1});add(new THREE.PlaneGeometry(o.width||600,o.depth||600,1,1),groundMat).rotation.x=-Math.PI/2}
+ else if(o.kind==='wall'){add(new THREE.BoxGeometry(o.width||130,o.height||220,o.depth||18),mat)}
+ else if(o.kind==='door'){add(new THREE.BoxGeometry(o.width||90,o.height||210,o.depth||12),new THREE.MeshStandardMaterial({color:o.color||0x79543a,metalness:.15,roughness:.7}));add(new THREE.SphereGeometry(4,12,8),new THREE.MeshStandardMaterial({color:0xd7ad58,metalness:.7}), (o.width||90)*.32,0,(o.depth||12)*.55)}
+ else if(o.kind==='window'){const frame=new THREE.MeshStandardMaterial({color:0x6d7785,metalness:.65,roughness:.35}),glass=new THREE.MeshStandardMaterial({color:0x7dc9e8,metalness:.25,roughness:.12,transparent:true,opacity:.48});add(new THREE.BoxGeometry(o.width||120,o.height||90,o.depth||10),glass);for(const x of [-(o.width||120)/2,(o.width||120)/2])add(new THREE.BoxGeometry(5,(o.height||90)+8,(o.depth||10)+4),frame,x,0,0);for(const y of [-(o.height||90)/2,(o.height||90)/2])add(new THREE.BoxGeometry((o.width||120)+8,5,(o.depth||10)+4),frame,0,y,0)}
+ else if(o.kind==='column')add(new THREE.CylinderGeometry(o.width||18,o.width||22,o.height||220,16));
+ else if(o.kind==='stairs'){const count=8,stepW=o.width||220,stepH=(o.height||120)/count,stepD=(o.depth||180)/count;for(let i=0;i<count;i++)add(new THREE.BoxGeometry(stepW,stepH*(i+1),stepD),mat,0,stepH*(i+1)/2,-(o.depth||180)/2+stepD*(i+.5))}
  else if(o.kind==='building'){add(new THREE.BoxGeometry(150,190,130));for(let y=-65;y<=65;y+=55)for(let x of [-42,0,42])add(new THREE.BoxGeometry(22,28,3),new THREE.MeshStandardMaterial({color:0x9bc7d9,metalness:.35,roughness:.2}),x,y,66)}
  else if(o.kind==='character'){add(new THREE.CylinderGeometry(20,24,62,16),mat,0,0,0);add(new THREE.SphereGeometry(20,20,16),new THREE.MeshStandardMaterial({color:0xf1d18a}),0,48,0);add(new THREE.BoxGeometry(58,18,24),mat,0,-12,0);add(new THREE.CylinderGeometry(8,9,42,12),mat,-16,-55,0);add(new THREE.CylinderGeometry(8,9,42,12),mat,16,-55,0)}
  else if(o.kind==='tree'){add(new THREE.CylinderGeometry(9,13,62,10),new THREE.MeshStandardMaterial({color:0x795333}),0,0,0);add(new THREE.ConeGeometry(48,100,12),new THREE.MeshStandardMaterial({color:0x39734a}),0,70,0);add(new THREE.ConeGeometry(36,78,12),new THREE.MeshStandardMaterial({color:0x4c9158}),0,115,0)}
  else if(o.kind==='camera'){add(new THREE.BoxGeometry(58,38,32),new THREE.MeshStandardMaterial({color:0x39485c,metalness:.65}));add(new THREE.CylinderGeometry(13,13,16,20),new THREE.MeshStandardMaterial({color:0x91c9e8,metalness:.7}),0,0,25).rotation.x=Math.PI/2;const cone=new THREE.Mesh(new THREE.ConeGeometry(34,90,20,1,true),new THREE.MeshBasicMaterial({color:0x8ecbff,wireframe:true,transparent:true,opacity:.45}));cone.rotation.x=-Math.PI/2;cone.position.set(0,-42,65);group.add(cone)}
  else if(o.kind==='light'){add(new THREE.SphereGeometry(22,20,16),new THREE.MeshBasicMaterial({color:0xffe3a1}));const lamp=new THREE.PointLight(0xffd58a,180,420);lamp.position.set(0,0,0);group.add(lamp);const helper=new THREE.Mesh(new THREE.SphereGeometry(48,16,12),new THREE.MeshBasicMaterial({color:0xffd58a,wireframe:true,transparent:true,opacity:.2}));group.add(helper)}
  else add(new THREE.BoxGeometry(130,130,130));
+ if(o.textureAssetId&&uploadedTextureCache.has(o.textureAssetId)){const texture=uploadedTextureCache.get(o.textureAssetId);group.traverse(node=>{if(node.isMesh){const materials=Array.isArray(node.material)?node.material:[node.material];node.material=materials.map(m=>{const clone=m.clone();clone.map=texture;clone.needsUpdate=true;return clone});if(!Array.isArray(node.material))node.material=node.material[0]}})}
  group.position.set(o.x,o.y,o.z);group.scale.set(o.sx,o.sy,o.sz);group.rotation.set(THREE.MathUtils.degToRad(o.rx),THREE.MathUtils.degToRad(o.ry),THREE.MathUtils.degToRad(o.rz));return group;
 }
 function syncThreeObjects(){
@@ -454,7 +482,7 @@ function syncThreeObjects(){
  if(selected3d&&transformControls){const selectedMesh=threeMeshes.get(selected3d);if(selectedMesh)transformControls.attach(selectedMesh)}
 }
 function update3d(){updateThreeCamera();const world=$('world3d');if(world)world.style.transform='translate3d(-50%,-50%,0) rotateX('+rotX+'deg) rotateY('+rotY+'deg) scale('+zoom3d+')'}
-function add3d(kind){const id='obj3d-'+(++extra3dCount),labels={cube:'Cubo',sphere:'Esfera',terrain:'Terreno',building:'Prédio',character:'Personagem',tree:'Árvore',camera:'Câmera',light:'Luz',house:'Casa',castle:'Castelo',bridge:'Ponte',road:'Estrada',water:'Água',mountain:'Montanha',rock:'Rocha',lamp:'Poste de luz',bench:'Banco',fountain:'Fonte',portal:'Portal',forest:'Floresta',village:'Vila',city:'Cidade',temple:'Templo',room:'Interior'},colors={terrain:0x526b45,building:0x8996a5,character:0xd7ad58,tree:0x39734a,camera:0x536d91,light:0xffd58a,house:0xc99a62,castle:0xb4a38c,bridge:0x806348,road:0x34363d,water:0x287fa8,mountain:0x78849a,rock:0x77736d,forest:0x39734a,village:0x657b4b,city:0x8293a4,temple:0xe1d7bd,room:0x8d9aa4},o={id,kind,name:labels[kind]||'Objeto 3D',color:colors[kind]||0xd7ad58,x:kind==='terrain'?0:extra3dCount*24,y:0,z:0,sx:1,sy:1,sz:1,rx:0,ry:0,rz:0};objects3d.push(o);render3dObjects();select3d(id)}
+function add3d(kind){const id='obj3d-'+(++extra3dCount),labels={cube:'Cubo',sphere:'Esfera',terrain:'Terreno',floor:'Chão',wall:'Parede',door:'Porta',window:'Janela',column:'Coluna',stairs:'Escada',building:'Prédio',character:'Personagem',tree:'Árvore',camera:'Câmera',light:'Luz',house:'Casa',castle:'Castelo',bridge:'Ponte',road:'Estrada',water:'Água',mountain:'Montanha',rock:'Rocha',lamp:'Poste de luz',bench:'Banco',fountain:'Fonte',portal:'Portal',forest:'Floresta',village:'Vila',city:'Cidade',temple:'Templo',room:'Interior'},colors={terrain:0x526b45,building:0x8996a5,character:0xd7ad58,tree:0x39734a,camera:0x536d91,light:0xffd58a,house:0xc99a62,castle:0xb4a38c,bridge:0x806348,road:0x34363d,water:0x287fa8,mountain:0x78849a,rock:0x77736d,forest:0x39734a,village:0x657b4b,city:0x8293a4,temple:0xe1d7bd,room:0x8d9aa4},o={id,kind,name:labels[kind]||'Objeto 3D',color:colors[kind]||0xd7ad58,x:kind==='terrain'?0:extra3dCount*24,y:0,z:0,sx:1,sy:1,sz:1,rx:0,ry:0,rz:0};objects3d.push(o);render3dObjects();select3d(id)}
 function render3dObjects(){if(!threeReady){$('foot').textContent='Carregando motor 3D…';return}syncThreeObjects();$('objects3d').innerHTML='';$('foot').textContent='Editor 3D WebGL · '+objects3d.length+' objetos'}
 function select3d(id){selected3d=id;render3dObjects();const o=objects3d.find(v=>v.id===id),i=$('inspector');i.innerHTML='';if(!o){if(transformControls)transformControls.detach();i.textContent='Selecione um bloco 3D.';return}const selectedMesh=threeMeshes.get(id);if(transformControls&&selectedMesh){transformControls.setMode('translate');transformControls.attach(selectedMesh)}for(const [label,key] of [['Posição X','x'],['Posição Y','y'],['Profundidade Z','z'],['Escala X','sx'],['Escala Y','sy'],['Escala Z','sz'],['Rotação X','rx'],['Rotação Y','ry'],['Rotação Z','rz']]){const row=document.createElement('div');row.className='field';const l=document.createElement('label');l.textContent=label;const input=document.createElement('input');input.type='number';input.step=key.startsWith('s')?'.1':'1';input.value=o[key];input.dataset.prop=key;input.onchange=()=>{o[key]=Number(input.value)||0;render3dObjects()};row.append(l,input);i.append(row)}const modes=document.createElement('div');modes.style.cssText='display:flex;gap:6px;flex-wrap:wrap;margin:8px 0';[['Mover','translate'],['Girar','rotate'],['Escalar','scale']].forEach(([label,mode])=>{const b=document.createElement('button');b.textContent=label;b.onclick=()=>{transformControls?.setMode(mode);if(selectedMesh)transformControls?.attach(selectedMesh)};modes.append(b)});i.append(modes);const flat=document.createElement('button');flat.textContent='Achatar bloco';flat.onclick=()=>{o.sy=.25;select3d(id)};const stretch=document.createElement('button');stretch.textContent='Esticar bloco';stretch.onclick=()=>{o.sx=2;o.sy=1;o.sz=1;select3d(id)};const del=document.createElement('button');del.textContent='Excluir bloco';del.onclick=()=>{objects3d=objects3d.filter(v=>v.id!==id);select3d(null)};const colorRow=document.createElement('div');colorRow.className='field';const colorLabel=document.createElement('label');colorLabel.textContent='Material / cor';const colorInput=document.createElement('input');colorInput.type='color';colorInput.value='#'+Number(o.color||0xd7ad58).toString(16).padStart(6,'0').slice(-6);colorInput.oninput=()=>{o.color=parseInt(colorInput.value.slice(1),16);render3dObjects()};colorRow.append(colorLabel,colorInput);i.append(colorRow,flat,stretch,del)}
 /* Movimento preciso do objeto selecionado pelos direcionais X/Y/Z. */
@@ -497,19 +525,22 @@ $('mode2d').onclick=()=>switchMode('2D');
 function setUiCollapsed(collapsed){document.body.classList.toggle('ui-collapsed',collapsed);$('collapseUiBtn').setAttribute('aria-expanded',String(!collapsed));$('collapseUiBtn').textContent=collapsed?'＋ Mostrar barras':'− Ocultar barras';$('restoreUiBtn').hidden=!collapsed;requestAnimationFrame(()=>{if(is3d)resizeThree3D()})}
 $('collapseUiBtn').onclick=()=>setUiCollapsed(!document.body.classList.contains('ui-collapsed'));$('restoreUiBtn').onclick=()=>setUiCollapsed(false);
 $('addCube3d').onclick=()=>add3d('cube');$('addSphere3d').onclick=()=>add3d('sphere');$('addTerrain3d').onclick=()=>add3d('terrain');$('addBuilding3d').onclick=()=>add3d('building');$('addCharacter3d').onclick=()=>add3d('character');$('addTree3d').onclick=()=>add3d('tree');$('addCamera3d').onclick=()=>add3d('camera');$('addLight3d').onclick=()=>add3d('light');$('addHouse3d').onclick=()=>add3d('house');$('addCastle3d').onclick=()=>add3d('castle');$('addForest3d').onclick=()=>add3d('forest');$('addVillage3d').onclick=()=>add3d('village');$('addCity3d').onclick=()=>add3d('city');$('addTemple3d').onclick=()=>add3d('temple');$('reset3d').onclick=()=>{rotX=-22;rotY=-28;setZoom3d(1)};
-const space3d=$('space3d');let touchZoomStart=0,touchZoomBase=1;function touchDistance(t){const dx=t[0].clientX-t[1].clientX,dy=t[0].clientY-t[1].clientY;return Math.hypot(dx,dy)}space3d.addEventListener('touchstart',e=>{if(e.touches.length===2){touchZoomStart=touchDistance(e.touches);touchZoomBase=zoom3d;e.preventDefault()}},{passive:false});space3d.addEventListener('touchmove',e=>{if(e.touches.length===2&&touchZoomStart){e.preventDefault();setZoom3d(touchZoomBase*touchDistance(e.touches)/touchZoomStart)}},{passive:false});space3d.addEventListener('touchend',e=>{if(e.touches.length<2)touchZoomStart=0},{passive:false});space3d.onpointerdown=e=>{if(transformControls?.dragging||transformControls?.axis)return;if(e.target===threeRenderer?.domElement)return;drag3d={x:e.clientX,y:e.clientY,move:false};space3d.setPointerCapture(e.pointerId)};
+const space3d=$('space3d');let touchZoomStart=0,touchZoomBase=1;function touchDistance(t){const dx=t[0].clientX-t[1].clientX,dy=t[0].clientY-t[1].clientY;return Math.hypot(dx,dy)}space3d.addEventListener('touchstart',e=>{if(e.touches.length===2){touchZoomStart=touchDistance(e.touches);touchZoomBase=zoom3d;e.preventDefault()}},{passive:false});space3d.addEventListener('touchmove',e=>{if(e.touches.length===2&&touchZoomStart){e.preventDefault();setZoom3d(touchZoomBase*touchDistance(e.touches)/touchZoomStart)}},{passive:false});space3d.addEventListener('touchend',e=>{if(e.touches.length<2)touchZoomStart=0},{passive:false});space3d.onpointerdown=e=>{if(previewActive||transformControls?.dragging||transformControls?.axis)return;if(e.target===threeRenderer?.domElement)return;drag3d={x:e.clientX,y:e.clientY,move:false};space3d.setPointerCapture(e.pointerId)};
 $('zoomIn3d').setAttribute('aria-label','Aproximar a cena 3D');$('zoomOut3d').setAttribute('aria-label','Afastar a cena 3D');
-$('space3d').onpointermove=e=>{if(transformControls?.dragging||e.target===threeRenderer?.domElement)return;if(!drag3d)return;rotY+=(e.clientX-drag3d.x)*.55;rotX=Math.max(-85,Math.min(85,rotX+(e.clientY-drag3d.y)*.55));drag3d.x=e.clientX;drag3d.y=e.clientY;update3d()};
+$('space3d').onpointermove=e=>{if(previewActive||transformControls?.dragging||e.target===threeRenderer?.domElement)return;if(!drag3d)return;rotY+=(e.clientX-drag3d.x)*.55;rotX=Math.max(-85,Math.min(85,rotX+(e.clientY-drag3d.y)*.55));drag3d.x=e.clientX;drag3d.y=e.clientY;update3d()};
 $('space3d').onpointerup=$('space3d').onpointercancel=()=>drag3d=null;
-$('space3d').onwheel=e=>{e.preventDefault();zoom3d=Math.max(.08,Math.min(8,zoom3d*(e.deltaY>0?.9:1.1)));update3d();$('zoomRange3d').value=zoom3d};
+$('space3d').onwheel=e=>{if(previewActive)return;e.preventDefault();zoom3d=Math.max(.08,Math.min(8,zoom3d*(e.deltaY>0?.9:1.1)));update3d();$('zoomRange3d').value=zoom3d};
 function setZoom3d(v){zoom3d=Math.max(.08,Math.min(8,Number(v)||1));update3d();$('zoomRange3d').value=zoom3d}
 $('zoomIn3d').onclick=()=>setZoom3d(zoom3d+.15);$('zoomOut3d').onclick=()=>setZoom3d(zoom3d-.15);$('zoomRange3d').oninput=e=>setZoom3d(e.target.value);
 $('focus3d').onclick=()=>{const o=objects3d.find(v=>v.id===selected3d);if(!o){$('foot').textContent='Selecione um bloco primeiro.';return}setZoom3d(1.8);rotX=-22;rotY=-28;update3d();$('foot').textContent='Foco no bloco selecionado'};
 $('fullscreen3d').onclick=async()=>{try{if(!document.fullscreenElement)await $('.stage').requestFullscreen();else await document.exitFullscreen()}catch{$('foot').textContent='Tela cheia indisponível neste navegador'}};
 document.addEventListener('fullscreenchange',()=>{$('fullscreen3d').textContent=document.fullscreenElement?'Sair da tela cheia':'Tela cheia'});
-$('codeBtn').onclick=()=>{$('codeWorkspace').hidden=false;canvas.hidden=true;$('viewport3d').hidden=true};
-$('closeCode').onclick=()=>{$('codeWorkspace').hidden=true;canvas.hidden=is3d;$('viewport3d').hidden=!is3d;if(!is3d)draw()};
-$('backTo3dFromCode').onclick=()=>{stopCodeRuntime();$('codeWorkspace').hidden=true;switchMode('3D');$('foot').textContent='Você voltou para a cena 3D.'};
+let codeReturnMode="3D";
+function openCodeWorkspace(){codeReturnMode=is3d?"3D":"2D";$('codeWorkspace').hidden=false;canvas.hidden=true;$('viewport3d').hidden=true;$('backTo3dFromCode').textContent="← Voltar à cena "+codeReturnMode;}
+function leaveCodeWorkspace(){stopCodeRuntime();$('codeWorkspace').hidden=true;switchMode(codeReturnMode);$('foot').textContent="Você voltou para a cena "+codeReturnMode+". ";}
+$('codeBtn').onclick=openCodeWorkspace;
+$('closeCode').onclick=leaveCodeWorkspace;
+$('backTo3dFromCode').onclick=leaveCodeWorkspace;
 $('resetCode').onclick=()=>{$('gameCode').value='const bloco = aurora.criar("rect", 640, 360);\naurora.cor(bloco, "#d7ad58");\naurora.pular(bloco, 90);'};
 let codeFrame=0,codeRuntime=null,codeKeys={},codeDown=null,codeMove=null,codeUp=null,codeKeyDown=null,codeKeyUp=null;
 function stopCodeRuntime(){if(codeFrame)cancelAnimationFrame(codeFrame);codeFrame=0;codeRuntime=null;running=false;if(codeKeyDown)window.removeEventListener('keydown',codeKeyDown);if(codeKeyUp)window.removeEventListener('keyup',codeKeyUp);if(codeDown)canvas.removeEventListener('pointerdown',codeDown);if(codeMove)canvas.removeEventListener('pointermove',codeMove);if(codeUp)canvas.removeEventListener('pointerup',codeUp);codeKeyDown=codeKeyUp=codeDown=codeMove=codeUp=null;codeKeys={}}
@@ -517,7 +548,7 @@ $('runCode').onclick=()=>{
  try{
   stopCodeRuntime();let used3d=false;
   const api={
-   criar:(type,x=640,y=360)=>{if(!['rect','circle','star','text','character','sprite','platform','scenario','collision'].includes(type))throw Error('Tipo 2D inválido: '+type);add(type);const o=objects.find(v=>v.id===selected);o.x=clamp(x,0,1280,640);o.y=clamp(y,0,720,360);return o.id},
+   criar:(type,x=640,y=360)=>{if(!['rect','circle','star','text','character','sprite','platform','scenario','collision','house','tree','mountain','cloud','water','road','bridge','building'].includes(type))throw Error('Tipo 2D inválido: '+type);add(type);const o=objects.find(v=>v.id===selected);o.x=clamp(x,0,1280,640);o.y=clamp(y,0,720,360);return o.id},
    cor:(id,color)=>{const o=objects.find(v=>v.id===id);if(o&&validColor(color)){o.color=color;draw()}},
    personagem:(x=180,y=560,color='#d7ad58')=>{const id=api.criar('character',x,y);api.cor(id,color);return id},
    inimigo:(x=900,y=360,color='#b94f62')=>{const id=api.criar('character',x,y);const o=objects.find(v=>v.id===id);o.name='Inimigo';o.color=color;o.w=62;o.h=90;return id},
@@ -526,12 +557,16 @@ $('runCode').onclick=()=>{
    cenario:(color='#17243a')=>{const id=api.criar('scenario',640,360);api.cor(id,validColor(color)?color:'#17243a');return id},
    item:(x=500,y=500,color='#f1d18a')=>{const id=api.criar('circle',x,y),o=objects.find(v=>v.id===id);o.w=o.h=28;o.name='Item';api.cor(id,color);return id},
    mapa:(opts={})=>{const bg=api.cenario(opts.fundo||'#17243a'),floor=api.plataforma(640,690,opts.largura||1280,50,opts.chao||'#4d5260');if(opts.plataformas!==false){api.plataforma(330,520,260,24);api.plataforma(850,430,280,24);api.plataforma(640,300,190,24)}return {fundo:bg,chao:floor}},
-   limparCena:()=>{rememberUndo();objects=[];selected=null;refresh();draw()},
+   limparCena:()=>{rememberUndo();objects=[];objects3d=[];selected=null;selected3d=null;refresh();render3dObjects();draw()},
    pular:(id,h=80)=>{const o=objects.find(v=>v.id===id);if(o){const y=o.y;o.y-=clamp(h,1,400,80);draw();setTimeout(()=>{o.y=y;draw()},450)}},
-   criar3D:(kind='cube',x=0,y=0,z=0)=>{if(!['cube','sphere','terrain','building','character','tree','camera','light'].includes(kind))throw Error('Tipo 3D inválido');const id='obj3d-'+(++extra3dCount),colors={terrain:0x526b45,building:0x8996a5,character:0xd7ad58,tree:0x39734a,camera:0x536d91,light:0xffd58a},o={id,kind,name:kind,color:colors[kind]||0xd7ad58,x:clamp(x,-1000,1000,0),y:clamp(y,-1000,1000,0),z:clamp(z,-1000,1000,0),sx:1,sy:1,sz:1,rx:0,ry:0,rz:0};objects3d.push(o);used3d=true;return id},
+   criar3D:(kind='cube',x=0,y=0,z=0)=>{if(!['cube','sphere','terrain','floor','wall','door','window','column','stairs','building','character','tree','camera','light','house','castle','bridge','road','water','mountain','rock','lamp','bench','fountain','portal','forest','village','city','temple','room'].includes(kind))throw Error('Tipo 3D inválido: '+kind);add3d(kind);const o=objects3d[objects3d.length-1];o.x=clamp(x,-10000,10000,0);o.y=clamp(y,-10000,10000,0);o.z=clamp(z,-10000,10000,0);used3d=true;return o.id},
    mover3D:(id,x=0,y=0,z=0)=>{const o=objects3d.find(v=>v.id===id);if(o){o.x=clamp(x,-1000,1000,o.x);o.y=clamp(y,-1000,1000,o.y);o.z=clamp(z,-1000,1000,o.z);used3d=true}},
    escala3D:(id,x=1,y=1,z=1)=>{const o=objects3d.find(v=>v.id===id);if(o){o.sx=clamp(x,.1,10,1);o.sy=clamp(y,.1,10,1);o.sz=clamp(z,.1,10,1);used3d=true}},
    girar3D:(id,x=0,y=0,z=0)=>{const o=objects3d.find(v=>v.id===id);if(o){o.rx=clamp(x,-360,360,0);o.ry=clamp(y,-360,360,0);o.rz=clamp(z,-360,360,0);used3d=true}},
+   criarChao3D:(tilesX=5,tilesZ=5,x=0,z=0)=>{const tx=clamp(tilesX,1,30,5),tz=clamp(tilesZ,1,30,5);add3d('floor');const o=objects3d[objects3d.length-1];o.name='Chão '+tx+'x'+tz;o.width=tx*100;o.depth=tz*100;o.tilesX=tx;o.tilesZ=tz;o.x=clamp(x,-10000,10000,0);o.z=clamp(z,-10000,10000,0);o.y=0;o.sx=o.sy=o.sz=1;used3d=true;return o.id},
+   criarParede3D:(side='north',length=null,height=240,x=null,z=null)=>{const floor=[...objects3d].reverse().find(v=>v.kind==='floor'||v.kind==='terrain'),fw=floor?.width||(600*(floor?.sx||1)),fd=floor?.depth||(600*(floor?.sz||1)),fx=floor?.x||0,fz=floor?.z||0,edge=['north','south','east','west'].includes(side)?side:'north',h=clamp(height,20,2000,240),len=clamp(length??(edge==='north'||edge==='south'?fw:fd),20,10000,fw),thick=18;add3d('wall');const o=objects3d[objects3d.length-1];o.name='Parede '+edge;o.side=edge;o.height=h;o.y=h/2;o.depth=(edge==='north'||edge==='south')?thick:len;o.width=(edge==='north'||edge==='south')?len:thick;o.sx=o.sy=o.sz=1;o.x=x??(edge==='west'?fx-fw/2:edge==='east'?fx+fw/2:fx);o.z=z??(edge==='north'?fz-fd/2:edge==='south'?fz+fd/2:fz);used3d=true;return o.id},
+   cor3D:(id,color)=>{const o=objects3d.find(v=>v.id===id);if(o&&validColor(color)){o.color=parseInt(color.slice(1),16);used3d=true}},
+   nomear:(id,name)=>{const o=objects3d.find(v=>v.id===id)||objects.find(v=>v.id===id);if(o)o.name=String(name).slice(0,60)},
    conectarJogo:g=>{
     if(!g?.player||!Array.isArray(g.enemies))return;stopCodeRuntime();codeRuntime=g;g.running=true;running=true;
     const keyMap={w:'w',a:'a',s:'s',d:'d',arrowup:'w',arrowleft:'a',arrowdown:'s',arrowright:'d'};
@@ -553,7 +588,7 @@ $('runCode').onclick=()=>{
   const source=$('gameCode').value,suffix='\n;if(typeof game!=="undefined" && game && game.player && Array.isArray(game.enemies)) aurora.conectarJogo(game);';
   new Function('aurora','canvas','ctx','"use strict";\n'+source+suffix)(api,canvas,ctx);
   refresh();draw();render3dObjects();if(used3d)switchMode('3D');else if(!codeRuntime)switchMode('2D');
-  $('codeStatus').textContent=codeRuntime?'Cena 2D criada! Mapa, personagem, inimigos, itens e HUD ativos. Use WASD ou toque na tela.':'Código executado. Objetos 2D: '+objects.length+' · Objetos 3D: '+objects3d.length+'.';
+  $('codeStatus').textContent=codeRuntime?'Script executando. Use WASD ou toque na tela.':'Script executado. Objetos 2D: '+objects.length+' · Objetos 3D: '+objects3d.length+'.';
  }catch(e){stopCodeRuntime();$('codeStatus').textContent='Erro: '+(e?.message||String(e));console.error('Aurora código:',e)}
 };
 const layout=document.querySelector('.layout');
@@ -715,8 +750,56 @@ function useLibraryAsset(id){
  }
  add(a.type);const o=objects.find(x=>x.id===selected);if(o){o.name=a.name;o.color=a.color;o.animated=!!a.animated;refresh();draw()}$('assetStatus').textContent=a.name+' adicionado à cena.';
 }
-$('libraryBtn').onclick=()=>{$('assetLibrary').classList.add('open');renderAssetLibrary()};
+$('libraryBtn').onclick=()=>{$('assetLibrary').classList.add('open');renderAssetLibrary();renderUploadedAssets()};
 $('assetClose').onclick=()=>$('assetLibrary').classList.remove('open');
+
+const ASSET_DB_NAME='aurora-engine-assets-v1';
+function openAssetDatabase(){return new Promise((resolve,reject)=>{if(!('indexedDB' in window)){reject(new Error('Este navegador não oferece armazenamento local de arquivos.'));return}const req=indexedDB.open(ASSET_DB_NAME,1);req.onupgradeneeded=()=>{if(!req.result.objectStoreNames.contains('assets'))req.result.createObjectStore('assets',{keyPath:'id'})};req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error||new Error('Não consegui abrir a biblioteca local.'))})}
+async function storeAssetFile(file){const db=await openAssetDatabase(),id=crypto.randomUUID();await new Promise((resolve,reject)=>{const tx=db.transaction('assets','readwrite');tx.objectStore('assets').put({id,name:file.name,type:file.type,size:file.size,blob:file,created:Date.now()});tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error)});db.close();return id}
+async function getStoredAsset(id){const db=await openAssetDatabase();const value=await new Promise((resolve,reject)=>{const req=db.transaction('assets','readonly').objectStore('assets').get(id);req.onsuccess=()=>resolve(req.result||null);req.onerror=()=>reject(req.error)});db.close();return value}
+async function getAllStoredAssets(){const db=await openAssetDatabase();const values=await new Promise((resolve,reject)=>{const req=db.transaction('assets','readonly').objectStore('assets').getAll();req.onsuccess=()=>resolve(req.result||[]);req.onerror=()=>reject(req.error)});db.close();return values}
+async function loadUploadedModel(record,addToScene=true){
+ if(!threeReady)await ensureThreeReady();if(!GLTFLoader||!threeReady)throw new Error('Não consegui iniciar o editor 3D.');
+ return new Promise((resolve,reject)=>{const url=URL.createObjectURL(record.blob);new GLTFLoader().load(url,gltf=>{const model=gltf.scene;model.traverse(node=>{if(node.isMesh){node.castShadow=true;node.receiveShadow=true}});uploadedModelCache.set(record.id,model);if(addToScene){rememberUndo();const id='uploaded-'+record.id;objects3d.push({id,kind:'uploaded',assetId:record.id,name:record.name.replace(/\\.[^.]+$/,''),x:0,y:0,z:0,sx:1,sy:1,sz:1,rx:0,ry:0,rz:0});selected3d=id;switchMode('3D');render3dObjects();select3d(id);save()}URL.revokeObjectURL(url);resolve(true)},undefined,error=>{URL.revokeObjectURL(url);reject(error||new Error('Não consegui ler este GLB.'))})})
+}
+async function applyUploadedTexture(record){
+ if(!threeReady)throw new Error('Abra a cena 3D e aguarde carregar antes de aplicar uma textura.');
+ const target=objects3d.find(o=>o.id===selected3d);if(!target)throw new Error('Selecione um objeto 3D primeiro.');
+ const url=URL.createObjectURL(record.blob);
+ return new Promise((resolve,reject)=>{new THREE.TextureLoader().load(url,texture=>{texture.colorSpace=THREE.SRGBColorSpace;uploadedTextureCache.set(record.id,texture);rememberUndo();target.textureAssetId=record.id;render3dObjects();$('assetStatus').textContent='Textura aplicada em '+target.name+'.';URL.revokeObjectURL(url);save();resolve(true)},undefined,error=>{URL.revokeObjectURL(url);reject(error||new Error('Não consegui carregar a imagem.'))})})
+}
+async function useUploadedAsset(id){
+ try{
+  const record=await getStoredAsset(id);if(!record)throw new Error('Arquivo não encontrado na biblioteca.');
+  const ext=record.name.split('.').pop().toLowerCase();
+  if(ext==='glb'){await loadUploadedModel(record,true);$('assetStatus').textContent=record.name+' adicionado à cena 3D.';return}
+  if(['png','jpg','jpeg','webp'].includes(ext)){await applyUploadedTexture(record);return}
+  if(['mp3','wav','ogg'].includes(ext)){const url=URL.createObjectURL(record.blob),audio=new Audio(url);audio.onended=()=>URL.revokeObjectURL(url);await audio.play();$('assetStatus').textContent='Reproduzindo '+record.name;return}
+  throw new Error('Formato não suportado.');
+ }catch(error){$('assetStatus').textContent=error?.message||'Falha ao usar o arquivo.'}
+}
+async function renderUploadedAssets(){
+ const host=$('uploadedAssets');if(!host)return;host.innerHTML='';
+ try{const records=await getAllStoredAssets();if(!records.length){host.textContent='Nenhum arquivo enviado ainda.';return}
+  records.sort((a,b)=>a.name.localeCompare(b.name)).forEach(record=>{const row=document.createElement('div');row.className='uploaded-file';const name=document.createElement('span');name.textContent=record.name+' · '+(record.size/1024/1024).toFixed(1)+' MB';const use=document.createElement('button');const ext=record.name.split('.').pop().toLowerCase();use.textContent=ext==='glb'?'＋ Inserir':(['png','jpg','jpeg','webp'].includes(ext)?'Aplicar':'▶ Ouvir');use.onclick=()=>useUploadedAsset(record.id);row.append(name,use);host.append(row)})
+ }catch(error){host.textContent=error?.message||'Não consegui ler a biblioteca.'}
+}
+async function restoreUploadedModels(){
+ try{const records=await getAllStoredAssets(),byId=new Map(records.map(r=>[r.id,r]));for(const o of objects3d){if(o.kind==='uploaded'&&o.assetId&&byId.has(o.assetId))await loadUploadedModel(byId.get(o.assetId),false);if(o.textureAssetId&&byId.has(o.textureAssetId)){const rec=byId.get(o.textureAssetId),url=URL.createObjectURL(rec.blob);await new Promise(resolve=>new THREE.TextureLoader().load(url,texture=>{texture.colorSpace=THREE.SRGBColorSpace;uploadedTextureCache.set(rec.id,texture);URL.revokeObjectURL(url);resolve(true)},undefined,()=>{URL.revokeObjectURL(url);resolve(false)}))}}render3dObjects();renderUploadedAssets()}catch(error){console.warn('Restauração de arquivos Aurora:',error)}
+}
+$('assetUploadBtn').onclick=()=>$('assetUploadInput').click();
+$('assetUploadInput').onchange=async event=>{
+ const files=Array.from(event.target.files||[]);if(!files.length)return;
+ for(const file of files){
+  const ext=file.name.split('.').pop().toLowerCase();
+  if(!['glb','png','jpg','jpeg','webp','mp3','wav','ogg'].includes(ext)){$('assetStatus').textContent='Formato não suportado: '+file.name;continue}
+  if(file.size>40*1024*1024){$('assetStatus').textContent=file.name+' excede o limite de 40 MB.';continue}
+  try{await storeAssetFile(file);$('assetStatus').textContent='Arquivo salvo na biblioteca deste navegador: '+file.name}
+  catch(error){$('assetStatus').textContent=error?.message||'Falha ao salvar '+file.name}
+ }
+ event.target.value='';await renderUploadedAssets();
+};
+
 
 
 
@@ -947,21 +1030,21 @@ function nextRuntimeLevel(){
  if(is3d){for(const m of g.enemy3d||[])threeScene.remove(m);g.enemy3d=[];for(let n=0;n<g.goal;n++){const m=new THREE.Mesh(new THREE.BoxGeometry(.9,1.8,.9),makeMat(0xa64b58));m.position.set((n-(g.goal-1)/2)*3,0.9,-7);threeScene.add(m);g.enemy3d.push(m)}}
  spawnRuntimeEnemies();$('gameResult').classList.remove('show');$('gameMessage').textContent='Nova fase: '+g.level+'. Elimine '+g.goal+' inimigos.';updateRuntimeStats();
 }
+function ensureThreeReady(){return new Promise((resolve,reject)=>{const started=performance.now();initThree3D();const poll=()=>{if(threeReady)return resolve(true);if(performance.now()-started>15000)return reject(new Error('O motor 3D demorou para iniciar. Tente novamente.'));setTimeout(poll,60)};poll()})}
 function startGamePreview(){
  if(fpsState.active){$('fpsObjective').textContent='Feche a prévia atual antes de testar seu projeto.';return}
+ let actor=is3d?objects3d.find(o=>o.kind==='character'):objects.find(o=>o.type==='character'||o.type==='sprite');
+ if(!actor){$('status').textContent='Para testar, adicione um personagem à cena primeiro. O editor não moverá mais o primeiro objeto como substituto.';return}
  previewActive=true;running=true;logicPreview=true;
  document.body.classList.add('preview-mode');$('previewBar').classList.add('visible');
- const list=is3d?objects3d:objects;
- let actor=is3d?objects3d.find(o=>o.kind==='character'):objects.find(o=>o.type==='character'||o.type==='sprite');
- if(!actor)actor=list.find(Boolean);
  if(is3d&&!threeReady){
-  initThree3D().then(()=>startGamePreviewReady(actor));
+  ensureThreeReady().then(()=>startGamePreviewReady(actor)).catch(error=>{$('status').textContent=error.message;stopGamePreview()});
  }else startGamePreviewReady(actor);
 }
 function startGamePreviewReady(actor){
  if(!previewActive)return;
- if(is3d){resizeThree3D();syncThreeObjects();if(transformControls){transformControls.detach();transformControls.enabled=false}const host=$('three3d');if(host)host.style.pointerEvents='none'}
- if(!actor){$('previewInfo').textContent='Adicione um personagem ou objeto à cena para iniciar a lógica.';gameRuntime=null;return}
+ if(is3d){resizeThree3D();syncThreeObjects();if(transformControls){transformControls.detach();transformControls.enabled=false}const host=$('three3d'),space=$('space3d');if(host)host.style.pointerEvents='none';if(space)space.style.pointerEvents='none';if(threeRenderer?.domElement)threeRenderer.domElement.style.pointerEvents='none'}
+ if(!actor){stopGamePreview();$('status').textContent='Adicione um personagem à cena antes de testar. O primeiro objeto do cenário não será usado como personagem.';return}
  const mesh=is3d?threeMeshes.get(actor.id):null;
  if(is3d&&!mesh){$('previewInfo').textContent='Não foi possível preparar o personagem 3D.';gameRuntime=null;return}
  gameRuntime={logicOnly:true,actorId:actor.id,player3d:mesh||null,x:is3d?0:actor.x-(actor.w||50)/2,y:is3d?0:actor.y-(actor.h||50)/2,w:actor.w||50,h:actor.h||50,vx:0,vy:0,vz:0,onGround:true,hp:100,score:0,level:1,kills:0,goal:0,enemies:[],platforms:[],last:0,finished:false,heading:0,cameraReady:false};
@@ -976,7 +1059,7 @@ function startGamePreviewReady(actor){
 
 function stopGamePreview(){
  if(!previewActive)return;previewActive=false;running=false;logicPreview=false;
- if(is3d){const host=$('three3d');if(host)host.style.pointerEvents='auto';const actor=objects3d.find(o=>o.id===gameRuntime?.actorId);const player=actor&&threeMeshes.get(actor.id);if(player)player.visible=true;if(transformControls){transformControls.enabled=true;const selectedMesh=threeMeshes.get(selected3d);if(selectedMesh)transformControls.attach(selectedMesh)}}
+ if(is3d){const host=$('three3d');if(host)host.style.pointerEvents='auto';const space=$('space3d');if(space)space.style.pointerEvents='auto';const gl=threeRenderer?.domElement;if(gl)gl.style.pointerEvents='auto';const actor=objects3d.find(o=>o.id===gameRuntime?.actorId);const player=actor&&threeMeshes.get(actor.id);if(player)player.visible=true;if(transformControls){transformControls.enabled=true;const selectedMesh=threeMeshes.get(selected3d);if(selectedMesh)transformControls.attach(selectedMesh)}}
  resetJoystick();gameKeys[' ']=false;
  gameRuntime=null;runtimeRoot.classList.remove('active');$('gameResult').classList.remove('show');
  document.body.classList.remove('preview-mode');$('previewBar').classList.remove('visible');
@@ -1023,7 +1106,7 @@ if('serviceWorker' in navigator&&location.protocol.startsWith('http'))window.add
  <button id="fpsExit">Sair da partida</button><div id="fpsCross">＋</div>
  <div id="fpsObjective">Objetivo: procure o ponto marcado e pressione E</div>
  <div id="fpsControls"><button id="fpsUp">▲</button><button id="fpsInteract">AÇÃO · E</button><button id="fpsDown">▼</button><button id="fpsShoot">DISPARAR</button><button id="fpsFloor">SUBIR</button></div>
-</div><div id="assetLibrary" aria-hidden="true"><div class="asset-shell"><div class="asset-head"><div><h2>Biblioteca de Recursos</h2><div class="hint">Recursos locais e procedurais para montar suas cenas.</div></div><button id="assetClose">Fechar ×</button></div><div class="asset-tabs" id="assetTabs"></div><div id="assetGrid" class="asset-grid"></div><div class="hint" id="assetStatus" style="margin-top:12px">Escolha um recurso para adicionar, aplicar ou ouvir.</div></div></div><div id="previewBar"><strong>PRÉ-VISUALIZAÇÃO</strong><span id="previewInfo">Teste do projeto atual</span><button id="runtimeCameraFirst" type="button">1ª pessoa</button><button id="runtimeCameraThird" type="button" class="active">3ª pessoa</button><button id="stopPreview" class="primary">■ Voltar ao editor</button></div><div id="logicEditor"><div class="logic-shell">
+</div><div id="assetLibrary" aria-hidden="true"><div class="asset-shell"><div class="asset-head"><div><h2>Biblioteca de Recursos</h2><div class="hint">Recursos locais e procedurais para montar suas cenas.</div></div><button id="assetClose">Fechar ×</button></div><div class="asset-tabs" id="assetTabs"></div><div class="asset-upload"><button id="assetUploadBtn" type="button">⬆ Enviar meus arquivos</button><input id="assetUploadInput" type="file" multiple accept=".glb,.png,.jpg,.jpeg,.webp,.mp3,.wav,.ogg" hidden><div class="hint">Modelos 3D: GLB · Texturas: PNG/JPG/WEBP · Áudio: MP3/WAV/OGG. Selecione vários arquivos do seu pack de uma vez.</div><div id="uploadedAssets" class="uploaded-assets"></div></div><div id="assetGrid" class="asset-grid"></div><div class="hint" id="assetStatus" style="margin-top:12px">Escolha um recurso para adicionar, aplicar ou ouvir.</div></div></div><div id="previewBar"><strong>PRÉ-VISUALIZAÇÃO</strong><span id="previewInfo">Teste do projeto atual</span><button id="runtimeCameraFirst" type="button">1ª pessoa</button><button id="runtimeCameraThird" type="button" class="active">3ª pessoa</button><button id="stopPreview" class="primary">■ Voltar ao editor</button></div><div id="logicEditor"><div class="logic-shell">
  <div class="logic-head"><div><h2>◇ Sistema de lógica visual</h2><div class="hint">Monte regras sem escrever código. Selecione um objeto e adicione blocos.</div></div><div style="display:flex;gap:7px;flex-wrap:wrap"><button id="backTo3dFromLogic" class="primary" type="button">← Voltar à cena 3D</button><button id="logicClose">Fechar ×</button></div></div>
  <div class="logic-form">
   <label>Objeto da cena<select id="logicObject"></select></label>

@@ -1,4 +1,4 @@
-const CACHE='aurora-engine-shell-v4';
+const CACHE='aurora-engine-shell-v5';
 const SHELL=['./','./index.html','./manifest.webmanifest','./icon.svg','./ai/bridge.js','./ai/prefabs.js'];
 self.addEventListener('install',event=>{
  event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(SHELL)).then(()=>self.skipWaiting()));
