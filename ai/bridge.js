@@ -3,7 +3,7 @@ function snapshotForAI(project){
  const p=project||{};
  return {name:p.name||"Meu jogo",mode:p.mode||"2D",width:p.width||1280,height:p.height||720,
   objects:(p.objects||[]).slice(-18).map(o=>({type:o.type,name:o.name,x:o.x,y:o.y,w:o.w,h:o.h,color:o.color})),
-  objects3d:(p.objects3d||[]).slice(-18).map(o=>({kind:o.kind,name:o.name,x:o.x,y:o.y,z:o.z,sx:o.sx,sy:o.sy,sz:o.sz,color:o.color}))};
+  objects3d:(p.objects3d||[]).slice(-28).map(o=>({kind:o.kind,name:o.name,x:o.x,y:o.y,z:o.z,sx:o.sx,sy:o.sy,sz:o.sz,width:o.width,height:o.height,depth:o.depth,side:o.side,assetId:o.assetId,color:o.color}))};
 }
 function parseReply(raw){
  const tick=String.fromCharCode(96),fence=new RegExp("^\\s*"+tick+"{3}(?:json)?\\s*","i"),endFence=new RegExp("\\s*"+tick+"{3}\\s*$");
@@ -51,7 +51,7 @@ export function createAIClient({getEndpoint,getProject,onMessage,applyActions,on
   const response=await fetch(endpoint+"/chat",{method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json"},cache:"no-store",body:JSON.stringify({message:content,project:project||{}})});
   const data=await response.json().catch(()=>({}));
   if(!response.ok)throw new Error(data.error||"O servidor respondeu HTTP "+response.status+".");
-  if(Array.isArray(data.actions))return {raw:String(data.reply||"Resposta recebida."),parsed:{intent:data.actions.length?"build":"chat",reply:String(data.reply||"Resposta recebida."),actions:data.actions,done:true}};
+  if(Array.isArray(data.actions)||typeof data.code==="string")return {raw:String(data.reply||"Resposta recebida."),parsed:{intent:String(data.intent||(data.actions?.length?"build":data.code?"code":"chat")),reply:String(data.reply||"Resposta recebida."),actions:Array.isArray(data.actions)?data.actions:[],code:String(data.code||""),done:data.done!==false}};
   const raw=typeof data.reply==="string"?data.reply:(typeof data.answer==="string"?data.answer:"");
   if(!raw.trim())throw new Error("A API não retornou uma resposta.");
   return {raw,parsed:parseReply(raw)};
@@ -66,9 +66,10 @@ export function createAIClient({getEndpoint,getProject,onMessage,applyActions,on
    "Para criar ou alterar a cena use intent build e ações executáveis. Para conversa/pergunta use chat/question sem ações. Nunca afirme que criou sem ações.",
    "Modo atual: "+project.mode+". Preserve objetos existentes e nunca substitua a cena sem pedido explícito.",
    "Ações 2D: {\"type\":\"create_object\",\"object\":{\"type\":\"rect|circle|text|star|character|sprite|platform|scenario|collision|house|tree|mountain|cloud|water|road|bridge|building\",\"name\":\"...\",\"x\":0,\"y\":0,\"w\":100,\"h\":100,\"color\":\"#RRGGBB\",\"text\":\"\"}}.",
-   "Ações 3D: {\"type\":\"create_3d_object\",\"object\":{\"kind\":\"cube|sphere|terrain|building|character|tree|camera|light|house|castle|bridge|road|water|mountain|rock|lamp|bench|fountain|portal|forest|village|city|temple|room\",\"name\":\"...\",\"x\":0,\"y\":0,\"z\":0,\"sx\":1,\"sy\":1,\"sz\":1,\"color\":\"#RRGGBB\"}}.",
-   "Também pode usar update_object/delete_object/update_3d_object/delete_3d_object com name e changes. No máximo 4 ações por etapa. Use nomes únicos e posições coerentes.",
-   "Não execute código. Se gerar JavaScript, coloque no campo code para revisão manual.",
+   "Ações 3D: create_3d_object com object {kind:cube|sphere|terrain|floor|wall|door|window|column|stairs|building|character|tree|camera|light|house|castle|bridge|road|water|mountain|rock|lamp|bench|fountain|portal|forest|village|city|temple|room,name,x,y,z,width,height,depth,tilesX,tilesZ,side,sx,sy,sz,color}. Para floor, tilesX/tilesZ representam quadrados de 100 unidades. Para wall, side é north|south|east|west; a engine alinha a parede à borda do piso e ajusta altura/comprimento para fechar os cantos. Não invente x/z=0 quando não souber; omita e deixe a engine distribuir objetos sem posição explícita.",
+   "Também pode usar update_object/delete_object/update_3d_object/delete_3d_object com name e changes. No máximo 4 ações por etapa. Use nomes únicos, leia a posição dos objetos existentes e não sobreponha objetos sem motivo.",
+   "Se o usuário pedir um SCRIPT, responda intent=code, actions=[], e coloque JavaScript executável no campo code. Use somente a API Aurora documentada: aurora.criar(tipo,x,y), aurora.cor(id,cor), aurora.personagem(x,y,cor), aurora.plataforma(x,y,largura,altura,cor), aurora.texto(texto,x,y,cor,tamanho), aurora.cenario(cor), aurora.item(x,y,cor), aurora.criar3D(tipo,x,y,z), aurora.criarChao3D(tilesX,tilesZ,x,z), aurora.criarParede3D(lado,comprimento,altura,x,z), aurora.mover3D(id,x,y,z), aurora.escala3D(id,x,y,z), aurora.girar3D(id,x,y,z), aurora.cor3D(id,cor), aurora.nomear(id,nome), aurora.limparCena(). Não use bibliotecas externas, DOM, fetch ou APIs fora de aurora. Escreva código completo, sem markdown fences, com nomes de variáveis declarados e compatível com JavaScript moderno.",
+   "Se o pedido for só criar objetos/cena, use intent=build e actions. Não devolva código em texto explicativo. Se for conversa/pergunta, use intent=chat. Resposta JSON obrigatória: {intent,reply,actions,code,done}. Nunca afirme que executou o código; ele será mostrado no editor para o usuário executar e revisar.",
    "Pedido: "+original.slice(0,1200),"Cena atual: "+JSON.stringify(project).slice(0,2500)
   ].join("\n");
   try{
@@ -82,7 +83,7 @@ export function createAIClient({getEndpoint,getProject,onMessage,applyActions,on
    if(typeof parsed.code==="string"&&parsed.code.trim())onCode?.(parsed.code);
    let message=appliedAny?String(parsed.reply||"A Forja atualizou a cena.")+"\\n\\nForja aplicou "+actions.length+" ações. Revise o resultado e use Desfazer se quiser voltar.":(actions.length?"Não consegui aplicar as ações retornadas. Nenhuma alteração foi confirmada.":"A Forja respondeu sem ações de cena. Nenhum objeto foi adicionado.");
    if(typeof parsed.code==="string"&&parsed.code.trim())message+="\\nO código foi colocado no Editor de Código para revisão; não foi executado automaticamente.";
-   say("assistant",message);progress("");return {applied:appliedAny,total,parsed};
+   say("assistant",message);progress("");return {applied:appliedAny,total:actions.length,parsed};
   }catch(error){showError(error?.message||"erro desconhecido");return {applied:false,error}}
  }
  installVoiceControls();installMobileComfort();return {ask,showError};
