@@ -51,7 +51,7 @@ export default {async fetch(req,env){
  const u=new URL(req.url);if(req.method==="OPTIONS")return new Response(null,{headers:cors});
  if(u.pathname==="/health")return json({ok:true,service:"Aurora Engine Worker",mcp:"/mcp",requiresKV:true,requiresMcpToken:true});
  if(u.pathname==="/models"&&req.method==="GET"){
-  const base=String(env.OMNIROUTE_BASE_URL||"").trim().replace(/\\/+$/,"");
+  const base=String(env.OMNIROUTE_BASE_URL||"").trim().replace(/\/+$/,"");
   const apiKey=String(env.OMNIROUTE_API_KEY||"").trim();
   const allowed=String(env.AI_ALLOWED_MODELS||"").split(",").map(v=>v.trim()).filter(Boolean);
   if(!base||!apiKey)return json({error:"Configure OMNIROUTE_BASE_URL e OMNIROUTE_API_KEY no Worker."},503);
