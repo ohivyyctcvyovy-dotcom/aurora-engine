@@ -1,6 +1,6 @@
 // Aurora Engine — Worker HTTP + MCP (Streamable HTTP).
 // Requer KV AURORA_KV, MCP_ACCESS_TOKEN e variáveis OMNIROUTE_BASE_URL, OMNIROUTE_MODEL, AI_ALLOWED_MODELS e secret OMNIROUTE_API_KEY.
-const cors={ "Access-Control-Allow-Origin":"*", "Access-Control-Allow-Methods":"GET,POST,OPTIONS", "Access-Control-Allow-Headers":"Content-Type,Authorization,Mcp-Session-Id" };
+const cors={ "Access-Control-Allow-Origin":"https://ohivyyctcvyovy-dotcom.github.io", "Access-Control-Allow-Methods":"GET,POST,OPTIONS", "Access-Control-Allow-Headers":"Content-Type,Authorization,Mcp-Session-Id", "Vary":"Origin" };
 const json=(data,status=200,headers={})=>new Response(JSON.stringify(data),{status,headers:{...cors,"Content-Type":"application/json",...headers}});
 const enc=s=>new TextEncoder().encode(s);
 const b64=b=>btoa(String.fromCharCode(...new Uint8Array(b))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
