@@ -76,20 +76,12 @@ export function createAIClient({getEndpoint,getProject,onMessage,applyActions,on
    if(!parsed){say("assistant","A API respondeu, mas o formato não foi reconhecido. Nenhuma alteração foi aplicada.");progress("");return {applied:false}}
    const intent=String(parsed.intent||(Array.isArray(parsed.actions)&&parsed.actions.length?"build":"chat")).toLowerCase();
    if(intent!=="build"){if(typeof parsed.code==="string"&&parsed.code.trim())onCode?.(parsed.code);say("assistant",String(parsed.reply||result.raw));progress("");return {applied:false,parsed}}
-   let appliedAny=false,total=0,round=0,current=parsed,reply=String(parsed.reply||"A Forja começou a construir a cena.");
-   while(round<5){
-    const actions=Array.isArray(current.actions)?current.actions.slice(0,4):[];if(!actions.length)break;
-    progress("Forja: aplicando etapa "+(round+1)+"…");let ok=false;try{ok=!!applyActions?.(actions)}catch{}
-    if(!ok)break;appliedAny=true;total+=actions.length;round++;if(current.done===true||round>=5)break;
-    project=snapshotForAI(getProject?.());
-    const continuation=["Continue a construção na cena Aurora. Responda SOMENTE JSON válido com no máximo 4 ações novas.","Não repita objetos existentes. Preserve a cena e mantenha alinhamento e escala coerentes.","Pedido original: "+original.slice(0,900),"Já foram aplicadas "+total+" ações. Se terminou, actions:[] e done:true. Cena atual: "+JSON.stringify(project).slice(0,2500)].join("\n");
-    progress("Forja: planejando a próxima etapa…");const next=await request(endpoint,continuation,project);current=next.parsed||{};
-    if(!next.parsed||String(current.intent||"build").toLowerCase()!=="build")break;
-   }
+   const actions=Array.isArray(parsed.actions)?parsed.actions.filter(a=>a&&typeof a==="object").slice(0,20):[];
+   let appliedAny=false;
+   if(actions.length){progress("Forja: aplicando "+actions.length+" ações à cena…");try{appliedAny=!!applyActions?.(actions)}catch{appliedAny=false}}
    if(typeof parsed.code==="string"&&parsed.code.trim())onCode?.(parsed.code);
-   let message=appliedAny?reply+"\n\nForja aplicou "+total+" ações na cena. Você pode revisar o resultado e usar Desfazer.":"A Forja não recebeu ações válidas. Nenhum objeto foi adicionado.";
-   if(round===5&&current.done!==true)message+="\nA construção chegou ao limite desta solicitação. Peça para continuar.";
-   if(typeof parsed.code==="string"&&parsed.code.trim())message+="\nO código foi colocado no Editor de Código para revisão; não foi executado automaticamente.";
+   let message=appliedAny?String(parsed.reply||"A Forja atualizou a cena.")+"\\n\\nForja aplicou "+actions.length+" ações. Revise o resultado e use Desfazer se quiser voltar.":(actions.length?"Não consegui aplicar as ações retornadas. Nenhuma alteração foi confirmada.":"A Forja respondeu sem ações de cena. Nenhum objeto foi adicionado.");
+   if(typeof parsed.code==="string"&&parsed.code.trim())message+="\\nO código foi colocado no Editor de Código para revisão; não foi executado automaticamente.";
    say("assistant",message);progress("");return {applied:appliedAny,total,parsed};
   }catch(error){showError(error?.message||"erro desconhecido");return {applied:false,error}}
  }
