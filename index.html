@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"><meta name="theme-color" content="#0b0b0d"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="apple-mobile-web-app-title" content="Aurora Engine"><link rel="manifest" href="./manifest.webmanifest"><link rel="icon" href="./icon.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="./icon.svg"><title>Aurora Engine</title>
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=5,user-scalable=yes"><meta name="theme-color" content="#0b0b0d"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="apple-mobile-web-app-title" content="Aurora Engine"><link rel="manifest" href="./manifest.webmanifest"><link rel="icon" href="./icon.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="./icon.svg"><title>Aurora Engine</title>
 <style>
 :root{color-scheme:dark;--bg:#09090b;--panel:#111115;--panel2:#19191f;--line:#2b2a31;--gold:#d7ad58;--gold2:#f1d18a;--muted:#96939b;--text:#f4f0e8}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:14px system-ui;overflow:hidden}button,input,textarea{font:inherit}button{border:1px solid var(--line);background:#1a1a20;color:var(--text);border-radius:8px;padding:8px 11px;cursor:pointer}button:hover,button.active{border-color:var(--gold);color:var(--gold2)}button.primary{background:var(--gold);color:#17130b;border-color:var(--gold);font-weight:700}
@@ -251,6 +251,10 @@ body.ui-collapsed .toolbar,body.ui-collapsed #viewport3d .view3dbar{display:none
 }
 
 
+
+/* Acessibilidade e desempenho mobile: viewport, área segura e redução de efeitos */
+@media(max-width:900px){html,body{min-height:100%;overscroll-behavior-y:none}header{padding-top:max(8px,env(safe-area-inset-top))}button{touch-action:manipulation}input,select,textarea{font-size:16px!important}#aiPrompt{min-height:88px}#aiMessages{overscroll-behavior:contain}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;transition-duration:.01ms!important}}
 </style><script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/"}}</script></head><body>
 <header><div class="brand">AURORA ENGINE<small>GAME CREATION STUDIO · PROTÓTIPO 0.1</small></div><div class="spacer"></div><span class="status" id="status">Projeto local</span><button id="collapseUiBtn" type="button" aria-expanded="true">− Ocultar barras</button><button id="objectsBtn">Objetos</button><button id="libraryBtn">▦ Biblioteca</button><button id="testGameBtn">▷ Testar jogo</button><button id="fpsBtn">✦ Gerar FPS</button><button id="aiBtn">Aurora AI</button><button id="undoBtn">↶ Desfazer</button><button id="saveBtn">Salvar</button><button id="installAppBtn" type="button" title="Instalar na tela inicial">＋ Instalar</button><button id="runBtn" type="button" hidden aria-hidden="true">Executar</button></header><button id="restoreUiBtn" type="button" hidden>＋ Mostrar interface</button>
 <div class="layout">
@@ -372,7 +376,7 @@ async function initThree3D(){
   const host=$('three3d');if(!host||threeReady)return;
   threeScene=new THREE.Scene();threeScene.background=new THREE.Color(0x171522);
   threeCamera=new THREE.PerspectiveCamera(48,1,.1,100000);
-  threeRenderer=new THREE.WebGLRenderer({antialias:true,alpha:false});threeRenderer.setPixelRatio(Math.min(devicePixelRatio||1,1.75));threeRenderer.shadowMap.enabled=true;threeRenderer.shadowMap.type=THREE.PCFSoftShadowMap;host.appendChild(threeRenderer.domElement);
+  const mobileDevice=matchMedia("(max-width: 900px)").matches||/Android|iPhone|iPad/i.test(navigator.userAgent);threeRenderer=new THREE.WebGLRenderer({antialias:!mobileDevice,alpha:false,powerPreference:"high-performance"});threeRenderer.setPixelRatio(Math.min(devicePixelRatio||1,mobileDevice?1:1.35));threeRenderer.shadowMap.enabled=!mobileDevice;threeRenderer.shadowMap.type=THREE.PCFSoftShadowMap;host.appendChild(threeRenderer.domElement);
   transformControls=new TransformControls(threeCamera,threeRenderer.domElement);transformControls.setMode('translate');transformControls.setSpace('world');transformControls.setSize(.62);threeScene.add(transformControls.getHelper());
   transformControls.addEventListener('dragging-changed',e=>{drag3d=null;space3d.style.cursor=e.value?'grabbing':'grab'});
   transformControls.addEventListener('objectChange',()=>{const mesh=transformControls.object;if(!mesh)return;const entry=[...threeMeshes.entries()].find(([,m])=>m===mesh);if(!entry)return;const o=objects3d.find(v=>v.id===entry[0]);if(!o)return;o.x=mesh.position.x;o.y=mesh.position.y;o.z=mesh.position.z;o.sx=Math.max(.05,mesh.scale.x);o.sy=Math.max(.05,mesh.scale.y);o.sz=Math.max(.05,mesh.scale.z);o.rx=THREE.MathUtils.radToDeg(mesh.rotation.x);o.ry=THREE.MathUtils.radToDeg(mesh.rotation.y);o.rz=THREE.MathUtils.radToDeg(mesh.rotation.z);});
@@ -407,12 +411,12 @@ async function initThree3D(){
   gl.addEventListener('touchend',e=>{if(e.touches.length<2)pinchDistance=0});
 
   if(selected3d)select3d(selected3d);
-  const animate=()=>{if(!threeReady)return;threeFrame=requestAnimationFrame(animate);threeRenderer.render(threeScene,threeCamera)};
-  animate();window.addEventListener('resize',resizeThree3D);if(window.ResizeObserver){const ro=new ResizeObserver(()=>resizeThree3D());ro.observe(host);}
+  let lastRenderAt=0;const mobileFrameMs=matchMedia("(max-width: 900px)").matches?33:16;const animate=()=>{if(!threeReady||document.hidden)return;threeFrame=requestAnimationFrame(animate);const now=performance.now();if(now-lastRenderAt<mobileFrameMs)return;lastRenderAt=now;threeRenderer.render(threeScene,threeCamera)};
+  animate();document.addEventListener("visibilitychange",()=>{if(document.hidden)cancelAnimationFrame(threeFrame);else animate()});window.addEventListener('resize',resizeThree3D);if(window.ResizeObserver){const ro=new ResizeObserver(()=>resizeThree3D());ro.observe(host);}
   $('foot').textContent='Cena 3D WebGL ativa · Three.js';
  }catch(err){threeInitializing=false;$('foot').textContent='Falha ao iniciar o 3D: '+(err?.message||'erro desconhecido');const panel=$('threeStatus');if(panel){panel.className='error';panel.style.display='block';panel.textContent='Não foi possível iniciar o 3D. Verifique a conexão e recarregue a página. Detalhe: '+(err?.message||'erro desconhecido')}console.error('Aurora Three.js:',err)}
 }
-function resizeThree3D(){if(!threeRenderer||!threeCamera)return;const host=$('three3d');if(!host||!host.isConnected)return;const w=Math.max(1,host.clientWidth),h=Math.max(1,host.clientHeight);threeRenderer.setPixelRatio(Math.min(window.devicePixelRatio||1,1.5));threeRenderer.setSize(w,h,false);threeCamera.aspect=w/h;threeCamera.updateProjectionMatrix();updateThreeCamera()}
+function resizeThree3D(){if(!threeRenderer||!threeCamera)return;const host=$('three3d');if(!host||!host.isConnected)return;const w=Math.max(1,host.clientWidth),h=Math.max(1,host.clientHeight);const mobileDevice=matchMedia("(max-width: 900px)").matches||/Android|iPhone|iPad/i.test(navigator.userAgent);threeRenderer.setPixelRatio(Math.min(window.devicePixelRatio||1,mobileDevice?1:1.35));threeRenderer.setSize(w,h,false);threeCamera.aspect=w/h;threeCamera.updateProjectionMatrix();updateThreeCamera()}
 function focusScene3D(){if(!threeCamera||!THREE)return;rotX=-24;rotY=-28;zoom3d=1;updateThreeCamera();const range=$('zoomRange3d');if(range)range.value='1';resizeThree3D()}
 function updateThreeCamera(){
  if(!threeCamera||!THREE)return;

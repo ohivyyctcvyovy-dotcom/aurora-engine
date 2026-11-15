@@ -1,6 +1,6 @@
 // Aurora Engine — Worker HTTP + MCP (Streamable HTTP).
-// Requer KV binding AURORA_KV e secrets OPENROUTER_API_KEY / MCP_ACCESS_TOKEN.
-const cors={ "Access-Control-Allow-Origin":"*", "Access-Control-Allow-Methods":"GET,POST,OPTIONS", "Access-Control-Allow-Headers":"Content-Type,Authorization,Mcp-Session-Id" };
+// Requer KV AURORA_KV, MCP_ACCESS_TOKEN e variáveis OMNIROUTE_BASE_URL, OMNIROUTE_MODEL, AI_ALLOWED_MODELS e secret OMNIROUTE_API_KEY.
+const cors={ "Access-Control-Allow-Origin":"https://ohivyyctcvyovy-dotcom.github.io", "Access-Control-Allow-Methods":"GET,POST,OPTIONS", "Access-Control-Allow-Headers":"Content-Type,Authorization,Mcp-Session-Id", "Vary":"Origin" };
 const json=(data,status=200,headers={})=>new Response(JSON.stringify(data),{status,headers:{...cors,"Content-Type":"application/json",...headers}});
 const enc=s=>new TextEncoder().encode(s);
 const b64=b=>btoa(String.fromCharCode(...new Uint8Array(b))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
@@ -51,13 +51,25 @@ export default {async fetch(req,env){
  const u=new URL(req.url);if(req.method==="OPTIONS")return new Response(null,{headers:cors});
  if(u.pathname==="/health")return json({ok:true,service:"Aurora Engine Worker",mcp:"/mcp",requiresKV:true,requiresMcpToken:true});
  if(u.pathname==="/chat"&&req.method==="POST"){
-  if(!env.OPENROUTER_API_KEY)return json({error:"Configure OPENROUTER_API_KEY no Cloudflare."},503);
-  try{const body=await req.json();const system=`Você é Aurora AI, assistente do Aurora Engine. Responda em português brasileiro e em JSON válido: {"reply":"...","actions":[]}. Ações: create_object com object {type rect|circle|text|star,name,x,y,w,h,color,text,fontSize}; update_object com name e changes; delete_object com name. Máximo 20 ações. Não afirme ter alterado se não incluir a ação.`;
-   const upstream=await fetch("https://openrouter.ai/api/v1/chat/completions",{method:"POST",headers:{"Authorization":"Bearer "+env.OPENROUTER_API_KEY,"Content-Type":"application/json","HTTP-Referer":"https://ohivyyctcvyovy-dotcom.github.io/aurora-engine/","X-Title":"Aurora Engine"},body:JSON.stringify({model:env.OPENROUTER_MODEL||"openrouter/auto",messages:[{role:"system",content:system},{role:"user",content:"Pedido: "+String(body.message||"").slice(0,4000)+"\nCena: "+JSON.stringify(body.project||{}).slice(0,16000)}],temperature:.3})});
-   const d=await upstream.json();if(!upstream.ok)return json({error:d.error?.message||"Erro no provedor."},502);
-   const raw=d.choices?.[0]?.message?.content||"{}";let parsed;try{parsed=JSON.parse(raw.replace(/^\s*```(?:json)?/i,"").replace(/```\s*$/,"").trim())}catch{parsed={reply:raw,actions:[]}}
-   return json({reply:String(parsed.reply||"Resposta recebida."),actions:Array.isArray(parsed.actions)?parsed.actions.slice(0,20):[]});
-  }catch(e){return json({error:e.message},500)}
+  const base=String(env.OMNIROUTE_BASE_URL||"").trim().replace(/\/+$/,"");
+  const apiKey=String(env.OMNIROUTE_API_KEY||"").trim();
+  const model=String(env.OMNIROUTE_MODEL||"").trim();
+  const allowed=String(env.AI_ALLOWED_MODELS||"").split(",").map(v=>v.trim()).filter(Boolean);
+  if(!base||!apiKey||!model)return json({error:"Configure OMNIROUTE_BASE_URL, OMNIROUTE_API_KEY e OMNIROUTE_MODEL no Cloudflare Worker."},503);
+  if(!allowed.includes(model))return json({error:"Este modelo não está na lista AI_ALLOWED_MODELS. Adicione somente IDs que você confirmou como gratuitos no OmniRoute."},403);
+  try{
+   const length=Number(req.headers.get("Content-Length")||0);if(length>24000)return json({error:"Pedido muito grande. Reduza a descrição ou o tamanho da cena."},413);
+   const body=await req.json();const message=String(body.message||"").slice(0,7000);
+   if(!message.trim())return json({error:"Escreva uma descrição para a Forja."},400);
+   const project=body.project&&typeof body.project==="object"?body.project:{};
+   const system="Você é Aurora AI, assistente do Aurora Engine. Responda em português brasileiro e SOMENTE JSON válido: {\"reply\":\"...\",\"actions\":[]}. Para conversa, actions deve ser []. Para criação de cenas, ações podem ser: create_object com object {type rect|circle|text|star|character|sprite|platform|scenario|collision|house|tree|mountain|cloud|water|road|bridge|building,name,x,y,w,h,color,text}; create_3d_object com object {kind cube|sphere|terrain|building|character|tree|camera|light|house|castle|bridge|road|water|mountain|rock|lamp|bench|fountain|portal|forest|village|city|temple|room,name,x,y,z,sx,sy,sz,color}; update_object/delete_object/update_3d_object/delete_3d_object com name e changes. Máximo 20 ações. Use nomes únicos e posições coerentes. Preserve a cena; nunca apague tudo sem pedido explícito. Não afirme que alterou algo se não incluir ações. Não execute código automaticamente; código deve ser entregue apenas para revisão.";
+   const upstream=await fetch(base+"/chat/completions",{method:"POST",headers:{"Authorization":"Bearer "+apiKey,"Content-Type":"application/json","Accept":"application/json"},body:JSON.stringify({model,messages:[{role:"system",content:system},{role:"user",content:"Pedido: "+message+"\nCena: "+JSON.stringify(project).slice(0,12000)}],temperature:.25,max_tokens:3000})});
+   const d=await upstream.json().catch(()=>({}));if(!upstream.ok)return json({error:d.error?.message||d.message||"Erro no OmniRoute.",provider_status:upstream.status},502);
+   const raw=d.choices?.[0]?.message?.content||"{}";let parsed;
+   try{const clean=raw.trim().replace(/^\s*```(?:json)?/i,"").replace(/```\s*$/,"").trim();parsed=JSON.parse(clean)}catch{parsed={reply:raw,actions:[]}}
+   const actions=Array.isArray(parsed.actions)?parsed.actions.filter(a=>a&&typeof a==="object").slice(0,20):[];
+   return json({reply:String(parsed.reply||"Resposta recebida.").slice(0,5000),actions});
+  }catch(e){return json({error:e?.message||"Falha ao consultar o OmniRoute."},500)}
  }
  if(u.pathname==="/.well-known/oauth-protected-resource")return json({resource:u.origin+"/mcp",authorization_servers:[u.origin],bearer_methods_supported:["header"],scopes_supported:["aurora:edit"]});
  if(u.pathname==="/.well-known/oauth-authorization-server")return json({issuer:u.origin,authorization_endpoint:u.origin+"/authorize",token_endpoint:u.origin+"/token",registration_endpoint:u.origin+"/register",response_types_supported:["code"],grant_types_supported:["authorization_code"],code_challenge_methods_supported:["S256"],token_endpoint_auth_methods_supported:["none"],scopes_supported:["aurora:edit"]});

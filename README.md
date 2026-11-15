@@ -17,9 +17,9 @@ O painel Aurora AI já vem configurado por padrão para usar:
 `https://aurora-api.ohivyyctcvyovy.workers.dev`
 
 A ponte `ai/bridge.js` usa o contrato da API Aurora:
-- Envia `POST /chat` com `{ messages: [{ role: "user", content: "..." }] }`.
-- Recebe a resposta em `{ reply: "..." }`.
-- Interpreta respostas JSON estruturadas para aplicar ações no editor.
+- Envia `POST /chat` com `{ message: "...", project: {...} }`, no mesmo formato que o Worker recebe.
+- Recebe `{ reply: "...", actions: [...] }` e aplica as ações autorizadas no editor.
+- A integração agora reconhece tanto ações 2D quanto ações 3D retornadas pelo modelo.
 - O endereço pode ser alterado no campo **Endpoint da IA**; a escolha fica salva no navegador.
 
 ### O que a IA consegue fazer no editor
@@ -36,11 +36,20 @@ As ações estruturadas passam por uma lista de tipos permitidos no editor. As a
 
 ### Requisitos da API
 
-A API precisa estar publicada e configurada com o segredo `OPENROUTER_API_KEY` no Cloudflare Worker. A chave permanece no servidor, nunca no HTML ou no navegador. O Worker deve permitir a origem `https://ohivyyctcvyovy-dotcom.github.io` e responder à rota `POST /chat` no formato descrito acima.
+### Configuração do OmniRoute no Cloudflare Worker
 
-A API gratuita pode ter limites de uso e disponibilidade do modelo. Não há garantia de uso ilimitado.
+O Worker usa a API OpenAI-compatível do OmniRoute em `/v1/chat/completions`. Configure no Cloudflare (Workers → Settings → Variables and Secrets):
 
-## Recursos do editor
+- `OMNIROUTE_BASE_URL`: endereço da sua instância, incluindo `/v1` (ex.: `https://SEU-ENDERECO/v1`).
+- `OMNIROUTE_MODEL`: ID exato do modelo exibido por `GET /v1/models`.
+- `AI_ALLOWED_MODELS`: lista separada por vírgulas dos IDs de modelos que você verificou como gratuitos. O Worker recusa modelos que não estejam nessa lista.
+- `OMNIROUTE_API_KEY`: crie como **Secret**, nunca como variável pública nem no HTML.
+
+A conta/instância OmniRoute precisa estar acessível pela internet a partir do Cloudflare Worker. Um endereço local como `http://localhost:20128/v1` não funciona a partir de um Worker hospedado. O OmniRoute oferece uma API compatível com OpenAI em `/v1`; consulte a documentação oficial para confirmar o endpoint e os IDs disponíveis: https://github.com/cheaper-inference/OmniRoute/blob/main/docs/reference/OPENAI_COMPATIBILITY.md
+
+O projeto não escolhe automaticamente um modelo pago: só permite o ID definido em `OMNIROUTE_MODEL` se ele também estiver na lista `AI_ALLOWED_MODELS`. Confirme no painel do OmniRoute que os modelos listados são gratuitos antes de adicioná-los. Cotas gratuitas podem mudar, ter limites e ficar indisponíveis; não existe garantia de uso ilimitado.
+
+## Melhorias desta atualização\n\n- Correção do contrato entre a Forja no navegador e o Worker (`message` + `project`; resposta `reply` + `actions`).\n- Integração do Worker com OmniRoute e bloqueio de modelos que não estejam na lista explícita `AI_ALLOWED_MODELS`.\n- Ditado em português brasileiro pelo microfone e leitura em voz alta da última resposta, quando o navegador oferece Web Speech API.\n- Ajustes de renderização 3D para celulares: antialiasing e sombras reduzidos em dispositivos móveis, limite de pixel ratio e pausa do render quando a página fica em segundo plano.\n- Melhorias de acessibilidade de toque e escala de texto no celular.\n\nO reconhecimento de voz depende do navegador, da permissão do microfone e pode usar um serviço de reconhecimento remoto; não é garantido offline. A leitura em voz alta usa a síntese de voz do navegador.\n\n## Recursos do editor
 
 - Editor 2D em Canvas e editor 3D WebGL.
 - Seleção, movimentação por toque/mouse e inspetor de propriedades.
@@ -52,4 +61,4 @@ A API gratuita pode ter limites de uso e disponibilidade do modelo. Não há gar
 
 ## Limites atuais
 
-Esta é uma versão em evolução. A IA pode aplicar até 12 ações estruturadas por resposta. Para cenas grandes, ela deve priorizar prefabs compostos e distribuí-los com posições e escalas coerentes. Recursos como execução completa de jogos exportáveis, multiplayer online, publicação Android/PC e sistemas avançados de jogo ainda exigem desenvolvimento adicional.
+Esta é uma versão em evolução. A IA pode aplicar até 20 ações estruturadas por solicitação (4 por etapa, em até 5 etapas). Para cenas grandes, ela deve priorizar prefabs compostos e distribuí-los com posições e escalas coerentes. Recursos como execução completa de jogos exportáveis, multiplayer online, publicação Android/PC e sistemas avançados de jogo ainda exigem desenvolvimento adicional.
